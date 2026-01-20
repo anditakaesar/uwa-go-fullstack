@@ -56,7 +56,6 @@ func SetupServer(dep *ServerDependency) *chi.Mux {
 		JWTService:    infraSvc.JWTService,
 		CookieService: infraSvc.CookieService,
 	})
-	giftHandler := handler.NewGiftHandler(infraSvc.GiftService)
 
 	router.Group(func(r chi.Router) {
 		// middlewares
@@ -67,7 +66,6 @@ func SetupServer(dep *ServerDependency) *chi.Mux {
 		))
 
 		handler.SetupMainRoutes(r, mainHandler)
-		handler.SetupGiftRoutes(r, giftHandler)
 	})
 
 	return router

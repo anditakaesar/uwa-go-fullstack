@@ -8,7 +8,3 @@ type Base struct {
 	UpdatedAt *time.Time
 	DeletedAt *time.Time
 }
-
-const (
-	GIFT_TYPE = "gifts"
-)

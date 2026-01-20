@@ -1,3 +1,2 @@
-DROP TABLE IF EXISTS "public"."gift_ratings";
 DROP TABLE IF EXISTS "public"."users";
-DROP TABLE IF EXISTS "public"."gifts";
+DROP INDEX IF EXISTS "idx_users_active";
