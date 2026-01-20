@@ -1,0 +1,23 @@
+{{define "title"}}Login{{end}}
+
+{{define "content"}}
+<form method="POST" action="/login">
+  <input type="hidden" name="csrf_token" value="{{.CSRF}}">
+
+  <label>
+    Username
+    <input type="text" name="username" value="admin" required>
+  </label>
+
+  <label>
+    Password
+    <input type="password" name="password" value="password" required>
+  </label>
+
+  <button type="submit">Login</button>
+
+  {{if .Error}}
+    <p style="color:red">{{.Error}}</p>
+  {{end}}
+</form>
+{{end}}

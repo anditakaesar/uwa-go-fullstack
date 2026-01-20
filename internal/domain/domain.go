@@ -1,0 +1,14 @@
+package domain
+
+import "time"
+
+type Base struct {
+	ID        int64
+	CreatedAt time.Time
+	UpdatedAt *time.Time
+	DeletedAt *time.Time
+}
+
+const (
+	GIFT_TYPE = "gifts"
+)
