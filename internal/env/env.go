@@ -35,4 +35,14 @@ func (v *values) IsDevelopment() bool {
 const (
 	CSRF_TOKEN_FIELD_NAME = "csrf_token"
 	IDENTITY_KEY          = "identity-key"
+	MAX_UPLOAD_SIZE       = 10 * 1024 * 1024 // 10 MB limit
+)
+
+var (
+	UPLOAD_ALLOWED_TYPES = map[string]bool{
+		"image/jpeg": true,
+		"image/png":  true,
+		"image/gif":  true,
+		"image/webp": true,
+	}
 )

@@ -1,0 +1,22 @@
+{{define "title"}}Upload{{end}}
+
+{{define "content"}}
+<form method="POST" action="/upload" enctype="multipart/form-data">
+  <input type="hidden" name="csrf_token" value="{{.CSRF}}">
+
+  <label for="file">Select file to upload:</label><br>
+  <input type="file" name="file" id="fileToUpload" accept="image/*"><br>
+
+  <button type="submit">Upload</button>
+
+  {{if .Error}}
+    <p style="color:red">{{.Error}}</p>
+  {{end}}
+    <br>
+  {{if .Uploaded}}
+    <a href="{{.Uploaded}}" target="_blank">{{.Uploaded}}</a>
+    <br>
+    <img src="{{.Uploaded}}" style="width: 50%;" />
+  {{end}}
+</form>
+{{end}}
