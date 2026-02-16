@@ -27,3 +27,8 @@ type Sort struct {
 func (s *Sort) ToSQLSort() string {
 	return fmt.Sprintf("%s %s", s.Field, s.Direction)
 }
+
+// Transaction key for context
+type txCtxKey string
+
+const TxKey txCtxKey = "TX_KEY"

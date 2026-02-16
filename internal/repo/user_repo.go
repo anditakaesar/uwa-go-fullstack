@@ -3,7 +3,9 @@ package repo
 import (
 	"context"
 
+	"github.com/anditakaesar/uwa-go-fullstack/internal/common"
 	"github.com/anditakaesar/uwa-go-fullstack/internal/domain"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -15,6 +17,15 @@ func NewUserRepository(db *pgxpool.Pool) *UserRepository {
 	return &UserRepository{
 		db: db,
 	}
+}
+
+func (r *UserRepository) GetExecutor(ctx context.Context) IDBExecutor {
+	tx, ok := ctx.Value(common.TxKey).(pgx.Tx)
+	if ok {
+		return tx
+	}
+
+	return r.db
 }
 
 func (r *UserRepository) CreateUser(ctx context.Context, newUser domain.User) (*domain.User, error) {
