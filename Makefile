@@ -1,4 +1,5 @@
 TOOLS_MIGRATE="$$(pwd)/tools/migrate"
+TOOLS_MOCKERY="$$(pwd)/tools/mockery"
 MIGRATION_PATH="$$(pwd)/db/migrations"
 DEV_DATABASE="postgres://postgres:password@localhost:5433/backend_db?sslmode=disable"
 
@@ -13,3 +14,6 @@ migrate-down:
 
 seed-database:
 	DB_URL=$(DEV_DATABASE) go run ./cmd/seed/main.go
+
+mockery:
+	$(TOOLS_MOCKERY)
