@@ -22,5 +22,10 @@ func main() {
 	svr := server.SetupServer(&server.ServerDependency{
 		DB: db,
 	})
-	http.ListenAndServe(env.Values.Port, svr)
+	xlog.Logger.Info(fmt.Sprintf("server listened at port: %s", env.Values.Port))
+	err = http.ListenAndServe(env.Values.Port, svr)
+	if err != nil {
+		xlog.Logger.Error(fmt.Sprintf("failed to start server: %v", err))
+		os.Exit(1)
+	}
 }

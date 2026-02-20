@@ -84,13 +84,23 @@ func seedUsers(ctx context.Context, services *infra.Services) {
 	}
 
 	var seedErrs []string
-	for _, u := range users {
-		_, seedErr := services.UserService.CreateUser(ctx, domain.User{
+	for i, u := range users {
+		newUser := domain.User{
 			Username: u.Username,
 			Password: u.Password,
-		})
+		}
+
+		if i == 0 { // the first one is user admin
+			_, seedErr := services.UserService.CreateUserAdmin(ctx, newUser)
+			if seedErr != nil {
+				seedErrs = append(seedErrs, fmt.Sprintf("error processing admin roled user (%s): %v", u.Username, seedErr))
+			}
+			continue
+		}
+
+		_, seedErr := services.UserService.CreateUser(ctx, newUser)
 		if seedErr != nil {
-			seedErrs = append(seedErrs, fmt.Sprintf("error processing %s: %v", u.Username, seedErr))
+			seedErrs = append(seedErrs, fmt.Sprintf("error processing (%s): %v", u.Username, seedErr))
 		}
 	}
 

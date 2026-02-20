@@ -8,6 +8,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/anditakaesar/uwa-go-fullstack/internal/domain"
 	"github.com/anditakaesar/uwa-go-fullstack/internal/env"
 	"github.com/anditakaesar/uwa-go-fullstack/internal/service"
 	"github.com/anditakaesar/uwa-go-fullstack/internal/web"
@@ -79,6 +80,7 @@ func SetupMainRoutes(router chi.Router, handler *MainHandler) {
 			},
 			Middlewares: []func(http.Handler) http.Handler{
 				RequireAuth(),
+				RequireRole([]domain.Role{domain.RoleAdmin}),
 				CSRFMiddleware(),
 			},
 		},

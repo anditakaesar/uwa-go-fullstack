@@ -1,7 +1,7 @@
 TOOLS_MIGRATE="$$(pwd)/tools/migrate"
 TOOLS_MOCKERY="$$(pwd)/tools/mockery"
 MIGRATION_PATH="$$(pwd)/db/migrations"
-DEV_DATABASE="postgres://postgres:password@localhost:5433/backend_db?sslmode=disable"
+DEV_DATABASE="postgres://postgres:password@localhost:5434/backend_db?sslmode=disable"
 
 create-migration:
 	$(TOOLS_MIGRATE) create -ext sql -dir $(MIGRATION_PATH) -seq $(name)

@@ -50,9 +50,33 @@ func (r *UserRepository) CreateUser(ctx context.Context, newUser domain.User) (*
 	return &model, nil
 }
 
+func (r *UserRepository) CreateUserAdmin(ctx context.Context, newUser domain.User) (*domain.User, error) {
+	const query = `
+        INSERT INTO users (username, password, role)
+        VALUES ($1, $2, $3)
+        RETURNING id, username, role, created_at, updated_at, deleted_at;
+    `
+
+	var model domain.User
+
+	err := r.db.QueryRow(ctx, query, newUser.Username, newUser.Password, domain.RoleAdmin).Scan(
+		&model.ID,
+		&model.Username,
+		&model.Role,
+		&model.CreatedAt,
+		&model.UpdatedAt,
+		&model.DeletedAt,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	return &model, nil
+}
+
 func (r *UserRepository) GetUser(ctx context.Context, username string) (*domain.User, error) {
 	const query = `
-		SELECT id, username, password, created_at, updated_at, deleted_at
+		SELECT id, username, password, role, created_at, updated_at, deleted_at
         FROM users
         WHERE deleted_at IS NULL
 		AND username = $1
@@ -64,6 +88,32 @@ func (r *UserRepository) GetUser(ctx context.Context, username string) (*domain.
 		&model.ID,
 		&model.Username,
 		&model.Password,
+		&model.Role,
+		&model.CreatedAt,
+		&model.UpdatedAt,
+		&model.DeletedAt,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	return &model, nil
+}
+
+func (r *UserRepository) GetUserByID(ctx context.Context, id int64) (*domain.User, error) {
+	const query = `
+		SELECT id, username, role, created_at, updated_at, deleted_at
+        FROM users
+        WHERE deleted_at IS NULL
+		AND id = $1
+	`
+
+	var model domain.User
+
+	err := r.db.QueryRow(ctx, query, id).Scan(
+		&model.ID,
+		&model.Username,
+		&model.Role,
 		&model.CreatedAt,
 		&model.UpdatedAt,
 		&model.DeletedAt,

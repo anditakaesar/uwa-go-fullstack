@@ -7,11 +7,13 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: password
       POSTGRES_ROOT_PASSWORD: password
+    env_file:
+      - .env
     ports:
-      - "5433:5432"
+      - "${EXPOSEPORT:-5432}:5432"
     volumes:
-      - data-volume:/var/lib/postgresql/data
+      - data-volume-uwafull:/var/lib/postgresql/data
 
 volumes:
-  data-volume:
+  data-volume-uwafull:
     driver: local

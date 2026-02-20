@@ -64,6 +64,7 @@ func SetupServer(dep *ServerDependency) *chi.Mux {
 			infraSvc.UserService,
 			infraSvc.JWTService,
 		))
+		r.Use(handler.ResolveUser(infraSvc.UserService))
 
 		handler.SetupMainRoutes(r, mainHandler)
 	})

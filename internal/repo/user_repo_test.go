@@ -116,17 +116,15 @@ func TestUserRepository_CreateUser(test *testing.T) {
 
 }
 
-func TestUserRepository_GetUser(test *testing.T) {
+func TestUserRepository_CreateAdminUser(test *testing.T) {
 	test.Parallel()
 
 	const query = `
-		SELECT id, username, password, created_at, updated_at, deleted_at
-        FROM users
-        WHERE deleted_at IS NULL
-		AND username = $1
-	`
-
-	expectUser := domain.User{
+			INSERT INTO users (username, password, role)
+			VALUES ($1, $2, $3)
+			RETURNING id, username, role, created_at, updated_at, deleted_at;
+		`
+	newUser := domain.User{
 		Username: "user1",
 		Password: "password1",
 	}
@@ -136,8 +134,64 @@ func TestUserRepository_GetUser(test *testing.T) {
 		assert.NoError(t, err)
 		defer m.mockDB.Close()
 
-		rows := m.mockDB.NewRows([]string{"id", "username", "password", "created_at", "updated_at", "deleted_at"}).
-			AddRow(int64(1), expectUser.Username, expectUser.Password, m.now, nil, nil)
+		rows := m.mockDB.NewRows([]string{"id", "username", "role", "created_at", "updated_at", "deleted_at"}).
+			AddRow(int64(1), newUser.Username, domain.RoleAdmin, m.now, nil, nil)
+		m.mockDB.ExpectQuery(regexp.QuoteMeta(query)).
+			WithArgs(newUser.Username, newUser.Password, domain.RoleAdmin).
+			WillReturnRows(rows)
+
+		r := repo.NewUserRepository(m.mockDB)
+		res, err := r.CreateUserAdmin(m.ctx, newUser)
+
+		assert.NoError(t, err)
+		assert.Equal(t, "user1", res.Username)
+		assert.Equal(t, domain.RoleAdmin, res.Role)
+		assert.Equal(t, res.CreatedAt, m.now)
+		assert.NoError(t, m.mockDB.ExpectationsWereMet())
+	})
+
+	test.Run("error", func(t *testing.T) {
+		m, err := setupMocks()
+		assert.NoError(t, err)
+		defer m.mockDB.Close()
+
+		m.mockDB.ExpectQuery(regexp.QuoteMeta(query)).
+			WithArgs(newUser.Username, newUser.Password, domain.RoleAdmin).
+			WillReturnError(errors.New("query_error"))
+
+		r := repo.NewUserRepository(m.mockDB)
+		res, err := r.CreateUserAdmin(m.ctx, newUser)
+
+		assert.Error(t, err)
+		assert.Nil(t, res)
+		assert.NoError(t, m.mockDB.ExpectationsWereMet())
+	})
+
+}
+
+func TestUserRepository_GetUser(test *testing.T) {
+	test.Parallel()
+
+	const query = `
+		SELECT id, username, password, role, created_at, updated_at, deleted_at
+        FROM users
+        WHERE deleted_at IS NULL
+		AND username = $1
+	`
+
+	expectUser := domain.User{
+		Username: "user1",
+		Password: "password1",
+		Role:     domain.RoleUser,
+	}
+
+	test.Run("success", func(t *testing.T) {
+		m, err := setupMocks()
+		assert.NoError(t, err)
+		defer m.mockDB.Close()
+
+		rows := m.mockDB.NewRows([]string{"id", "username", "password", "role", "created_at", "updated_at", "deleted_at"}).
+			AddRow(int64(1), expectUser.Username, expectUser.Password, expectUser.Role, m.now, nil, nil)
 		m.mockDB.ExpectQuery(regexp.QuoteMeta(query)).
 			WithArgs(expectUser.Username).
 			WillReturnRows(rows)
@@ -147,6 +201,7 @@ func TestUserRepository_GetUser(test *testing.T) {
 
 		assert.NoError(t, err)
 		assert.Equal(t, "user1", res.Username)
+		assert.Equal(t, domain.RoleUser, res.Role)
 		assert.Equal(t, res.CreatedAt, m.now)
 		assert.NoError(t, m.mockDB.ExpectationsWereMet())
 	})
@@ -162,6 +217,60 @@ func TestUserRepository_GetUser(test *testing.T) {
 
 		r := repo.NewUserRepository(m.mockDB)
 		res, err := r.GetUser(m.ctx, "user1")
+
+		assert.Error(t, err)
+		assert.Nil(t, res)
+		assert.NoError(t, m.mockDB.ExpectationsWereMet())
+	})
+}
+
+func TestUserRepository_GetUserByID(test *testing.T) {
+	test.Parallel()
+
+	const query = `
+		SELECT id, username, role, created_at, updated_at, deleted_at
+        FROM users
+        WHERE deleted_at IS NULL
+		AND id = $1
+	`
+
+	expectUser := domain.User{
+		Username: "user1",
+		Role:     domain.RoleUser,
+	}
+
+	test.Run("success", func(t *testing.T) {
+		m, err := setupMocks()
+		assert.NoError(t, err)
+		defer m.mockDB.Close()
+
+		rows := m.mockDB.NewRows([]string{"id", "username", "role", "created_at", "updated_at", "deleted_at"}).
+			AddRow(int64(1), expectUser.Username, expectUser.Role, m.now, nil, nil)
+		m.mockDB.ExpectQuery(regexp.QuoteMeta(query)).
+			WithArgs(int64(1)).
+			WillReturnRows(rows)
+
+		r := repo.NewUserRepository(m.mockDB)
+		res, err := r.GetUserByID(m.ctx, int64(1))
+
+		assert.NoError(t, err)
+		assert.Equal(t, "user1", res.Username)
+		assert.Equal(t, domain.RoleUser, res.Role)
+		assert.Equal(t, res.CreatedAt, m.now)
+		assert.NoError(t, m.mockDB.ExpectationsWereMet())
+	})
+
+	test.Run("error", func(t *testing.T) {
+		m, err := setupMocks()
+		assert.NoError(t, err)
+		defer m.mockDB.Close()
+
+		m.mockDB.ExpectQuery(regexp.QuoteMeta(query)).
+			WithArgs(int64(1)).
+			WillReturnError(errors.New("query_error"))
+
+		r := repo.NewUserRepository(m.mockDB)
+		res, err := r.GetUserByID(m.ctx, int64(1))
 
 		assert.Error(t, err)
 		assert.Nil(t, res)

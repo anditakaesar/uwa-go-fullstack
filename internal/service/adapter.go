@@ -8,7 +8,9 @@ import (
 
 type IUserRepository interface {
 	CreateUser(ctx context.Context, newUser domain.User) (*domain.User, error)
+	CreateUserAdmin(ctx context.Context, newUser domain.User) (*domain.User, error)
 	GetUser(ctx context.Context, username string) (*domain.User, error)
+	GetUserByID(ctx context.Context, id int64) (*domain.User, error)
 }
 
 type IUnitOfWork interface {
