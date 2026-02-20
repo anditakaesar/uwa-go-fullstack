@@ -6,14 +6,13 @@ import (
 	"github.com/anditakaesar/uwa-go-fullstack/internal/common"
 	"github.com/anditakaesar/uwa-go-fullstack/internal/domain"
 	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type UserRepository struct {
-	db *pgxpool.Pool
+	db IDBExecutor
 }
 
-func NewUserRepository(db *pgxpool.Pool) *UserRepository {
+func NewUserRepository(db IDBExecutor) *UserRepository {
 	return &UserRepository{
 		db: db,
 	}
