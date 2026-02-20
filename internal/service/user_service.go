@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/anditakaesar/uwa-go-fullstack/internal/domain"
-	"golang.org/x/crypto/bcrypt"
 )
 
 type IUserService interface {
@@ -14,17 +13,24 @@ type IUserService interface {
 }
 
 type UserService struct {
-	userRepo IUserRepository
+	userRepo    IUserRepository
+	passChecker IPasswordChecker
 }
 
-func NewUserService(userRepo IUserRepository) *UserService {
+func NewUserService(userRepo IUserRepository, passChecker IPasswordChecker) *UserService {
 	return &UserService{
-		userRepo: userRepo,
+		userRepo:    userRepo,
+		passChecker: passChecker,
 	}
 }
 
 func (s *UserService) CreateUser(ctx context.Context, user domain.User) (*domain.User, error) {
-	user.Password = s.hashPassword(user.Password)
+	hash, err := s.passChecker.HashPassword(user.Password)
+	if err != nil {
+		return nil, err
+	}
+
+	user.Password = hash
 	return s.userRepo.CreateUser(ctx, user)
 }
 
@@ -34,23 +40,9 @@ func (s *UserService) AuthenticateUser(ctx context.Context, username string, pas
 		return nil, fmt.Errorf("error while getting user: %v", err)
 	}
 
-	if !s.checkPassword(getUser.Password, password) {
+	if !s.passChecker.CheckPassword(getUser.Password, password) {
 		return nil, fmt.Errorf("wrong password attempt: %s", password)
 	}
 
 	return getUser, nil
-}
-
-func (s *UserService) hashPassword(password string) string {
-	hash, _ := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
-	return string(hash)
-}
-
-func (s *UserService) checkPassword(hash, password string) bool {
-	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
-	if err != nil {
-		return false
-	}
-
-	return true
 }

@@ -14,3 +14,8 @@ type IUserRepository interface {
 type IUnitOfWork interface {
 	Do(ctx context.Context, fn func(ctx context.Context) error) error
 }
+
+type IPasswordChecker interface {
+	HashPassword(password string) (string, error)
+	CheckPassword(password string, hash string) bool
+}

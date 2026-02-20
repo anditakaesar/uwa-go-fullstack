@@ -14,7 +14,7 @@ type Services struct {
 
 func NewInfra(pool *pgxpool.Pool) *Services {
 	userRepo := repo.NewUserRepository(pool)
-	userSvc := service.NewUserService(userRepo)
+	userSvc := service.NewUserService(userRepo, &passwordUtil{})
 	jwtSvc := NewJWTService()
 	cookieService := NewCookieService()
 
