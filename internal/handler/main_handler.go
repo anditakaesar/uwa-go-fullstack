@@ -116,8 +116,9 @@ func SetupMainRoutes(router chi.Router, handler *MainHandler) {
 func (h *MainHandler) Index(w http.ResponseWriter, r *http.Request) {
 	session, err := h.CookieService.Get(r, "auth_session")
 	if err != nil {
-		JSONAPIErr(w, http.StatusInternalServerError, ErrObj{
-			Title: "session error",
+		SendError(w, http.StatusInternalServerError, ErrObj{
+			Title:   "error when get auth_session",
+			Message: err.Error(),
 		})
 		return
 	}
@@ -149,8 +150,9 @@ func (h *MainHandler) GetLogout(w http.ResponseWriter, r *http.Request) {
 
 	err := session.Save(r, w)
 	if err != nil {
-		JSONAPIErr(w, http.StatusInternalServerError, ErrObj{
-			Title: "session error",
+		SendError(w, http.StatusInternalServerError, ErrObj{
+			Title:   "session error",
+			Message: err.Error(),
 		})
 		return
 	}
@@ -161,7 +163,10 @@ func (h *MainHandler) GetLogout(w http.ResponseWriter, r *http.Request) {
 func (h *MainHandler) PostLogin(w http.ResponseWriter, r *http.Request) {
 	err := r.ParseForm()
 	if err != nil {
-		http.Error(w, "bad request", http.StatusBadRequest)
+		SendError(w, http.StatusBadRequest, ErrObj{
+			Title:   "error when parsing request",
+			Message: err.Error(),
+		})
 		return
 	}
 
@@ -191,8 +196,9 @@ func (h *MainHandler) PostLogin(w http.ResponseWriter, r *http.Request) {
 
 	jwtToken, err := h.JWTService.IssueJWT(user.ID, []byte(env.Values.JWTSecret))
 	if err := session.Save(r, w); err != nil {
-		JSONAPIErr(w, http.StatusInternalServerError, ErrObj{
-			Title: "issuing token error",
+		SendError(w, http.StatusInternalServerError, ErrObj{
+			Title:   "issuing token error",
+			Message: err.Error(),
 		})
 		return
 	}
@@ -201,8 +207,9 @@ func (h *MainHandler) PostLogin(w http.ResponseWriter, r *http.Request) {
 
 	err = session.Save(r, w)
 	if err != nil {
-		JSONAPIErr(w, http.StatusInternalServerError, ErrObj{
-			Title: "session error",
+		SendError(w, http.StatusInternalServerError, ErrObj{
+			Title:   "session error",
+			Message: err.Error(),
 		})
 		return
 	}

@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+
+	"github.com/anditakaesar/uwa-go-fullstack/internal/xlog"
 )
 
 type TypeHandlerFunc func(w http.ResponseWriter, r *http.Request)
@@ -19,61 +21,39 @@ type EndpointWithMiddleware struct {
 	Middlewares []func(http.Handler) http.Handler
 }
 
-type ErrObjSource struct {
-	Parameter string `json:"parameter,omitempty"`
-	Pointer   string `json:"pointer,omitempty"`
-	Header    string `json:"header,omitempty"`
+type Response struct {
+	Data any `json:"data"`
+	Meta any `json:"meta,omitempty"`
 }
 
+// ErrorResponse
 type ErrObj struct {
-	Status string       `json:"status"`
-	Title  string       `json:"title"`
-	Source ErrObjSource `json:"source"`
+	Title   string `json:"title,omitempty"`
+	Message string `json:"message,omitempty"`
 }
 
-type ErrObjResponse struct {
-	ErrObjs []ErrObj `json:"errors"`
+type ErrorResponse struct {
+	Error ErrObj `json:"error"`
 }
 
-func JSON(w http.ResponseWriter, status int, v any) {
+func SendJSON(w http.ResponseWriter, status int, unwrappedData any) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(status)
 
-	enc := json.NewEncoder(w)
-	enc.SetEscapeHTML(true)
-	err := enc.Encode(v)
-	if err != nil {
-		http.Error(w, "json encode error", http.StatusInternalServerError)
+	response := Response{Data: unwrappedData}
+
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		xlog.Logger.Error(fmt.Sprintf("json encode error: %v", err))
+		http.Error(w, "internal server error", http.StatusInternalServerError)
 	}
 }
 
-func JSONAPI(w http.ResponseWriter, status int, v any) {
-	w.Header().Set("Content-Type", "application/vnd.api+json")
+func SendError(w http.ResponseWriter, status int, errObj ErrObj) {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(status)
 
-	enc := json.NewEncoder(w)
-	enc.SetEscapeHTML(true)
-	err := enc.Encode(v)
-
-	if err != nil {
-		http.Error(w, "json:api encode error", http.StatusInternalServerError)
+	resp := ErrorResponse{
+		Error: errObj,
 	}
-}
-
-func JSONAPIErr(w http.ResponseWriter, status int, errObj ErrObj) {
-	w.Header().Set("Content-Type", "application/vnd.api+json")
-	w.WriteHeader(status)
-
-	enc := json.NewEncoder(w)
-	enc.SetEscapeHTML(true)
-
-	errObj.Status = fmt.Sprint(status)
-
-	err := enc.Encode(ErrObjResponse{
-		ErrObjs: []ErrObj{errObj},
-	})
-
-	if err != nil {
-		http.Error(w, "json:api encode error", http.StatusInternalServerError)
-	}
+	json.NewEncoder(w).Encode(resp)
 }
