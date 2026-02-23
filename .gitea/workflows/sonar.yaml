@@ -22,8 +22,19 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.25' # or your version
+
+      - name: Run Tests and Generate Coverage
+        run: |
+          # Generate the coverage file
+          go test -v -coverprofile=coverage.out ./internal/...
+          # Generate the machine-readable test report
+          go test -v -json ./internal/... > report.json
+
       - name: SonarQube Scan
-        # Use the latest version of the scanner action
         uses: sonarsource/sonarqube-scan-action@master
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
