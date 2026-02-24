@@ -11,15 +11,20 @@
 
     <header class="bg-white border-b border-gray-200">
         <div class="max-w-[1200px] mx-auto px-6 h-16 flex items-center justify-between">
-            <div class="text-xl font-bold text-blue-600">BrandLogo</div>
+            <a href="/" class="flex items-center">
+              <img src="/uploads/simple-logo.png" 
+                  alt="Brand Logo" 
+                  class="h-10 w-auto object-contain hover:opacity-90 transition">
+              <span class="ml-3 text-xl font-bold text-gray-900 hidden sm:block">UWA Fullstack</span>
+          </a>
             {{if .IsLoggedIn}}
-            <nav class="space-x-8 font-medium text-gray-600">
+            <nav aria-label="top navigation" class="space-x-8 font-medium text-gray-600">
                 <a href="/" class="hover:text-blue-600 transition">Home</a>
                 <a href="/upload" class="hover:text-blue-600 transition">Upload</a>
                 <a href="/logout" class="hover:text-blue-600 transition">Logout</a>
             </nav>
             {{else}}
-            <nav class="space-x-8 font-medium text-gray-600">
+            <nav aria-label="top navigation" class="space-x-8 font-medium text-gray-600">
                 <a href="/" class="hover:text-blue-600 transition">Home</a>
                 <a href="/login" class="hover:text-blue-600 transition">Login</a>
             </nav>

@@ -159,7 +159,7 @@ func (h *MainHandler) GetLogout(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.Render(r.Context(), w, "logout.html", map[string]any{})
+	http.Redirect(w, r, "/", http.StatusSeeOther)
 }
 
 func (h *MainHandler) PostLogin(w http.ResponseWriter, r *http.Request) {
