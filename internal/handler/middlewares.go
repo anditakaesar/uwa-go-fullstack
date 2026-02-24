@@ -2,6 +2,7 @@ package handler
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"slices"
 	"strings"
@@ -9,6 +10,7 @@ import (
 	"github.com/anditakaesar/uwa-go-fullstack/internal/domain"
 	"github.com/anditakaesar/uwa-go-fullstack/internal/env"
 	"github.com/anditakaesar/uwa-go-fullstack/internal/service"
+	"github.com/anditakaesar/uwa-go-fullstack/internal/xlog"
 	"github.com/gorilla/csrf"
 	"github.com/gorilla/sessions"
 )
@@ -146,4 +148,22 @@ func RequireAuth() Middleware {
 			next.ServeHTTP(w, r)
 		})
 	}
+}
+
+func GlobalErrorMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		defer func() {
+			if rvr := recover(); rvr != nil {
+				xlog.Logger.Error(fmt.Sprintf("PANIC RECOVERED: %v", rvr))
+
+				SendError(w, http.StatusInternalServerError,
+					ErrObj{
+						Title:   "Internal Server Error",
+						Message: "An unexpected error happened.",
+					})
+			}
+		}()
+
+		next.ServeHTTP(w, r)
+	})
 }

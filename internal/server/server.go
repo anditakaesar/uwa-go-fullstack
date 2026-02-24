@@ -59,6 +59,7 @@ func SetupServer(dep *ServerDependency) *chi.Mux {
 
 	router.Group(func(r chi.Router) {
 		// middlewares
+		r.Use(handler.GlobalErrorMiddleware)
 		r.Use(handler.ResolveAuth(
 			infraSvc.CookieService,
 			infraSvc.UserService,

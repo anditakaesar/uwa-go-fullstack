@@ -5,10 +5,11 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/anditakaesar/uwa-go-fullstack/internal/xerror"
 	"github.com/anditakaesar/uwa-go-fullstack/internal/xlog"
 )
 
-type TypeHandlerFunc func(w http.ResponseWriter, r *http.Request)
+type AppHandler func(w http.ResponseWriter, r *http.Request) error
 
 type Endpoint struct {
 	HttpMethod string
@@ -56,4 +57,16 @@ func SendError(w http.ResponseWriter, status int, errObj ErrObj) {
 		Error: errObj,
 	}
 	json.NewEncoder(w).Encode(resp)
+}
+
+func MakeHandler(h AppHandler) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if err := h(w, r); err != nil {
+			xlog.Logger.Error(fmt.Sprintf("Server error [%s]: %v", r.URL.Path, err))
+			SendError(w, xerror.DefineStatusCode(err), ErrObj{
+				Title:   "server error",
+				Message: err.Error(),
+			})
+		}
+	}
 }
