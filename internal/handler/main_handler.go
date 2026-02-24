@@ -16,6 +16,8 @@ import (
 	"github.com/gorilla/csrf"
 )
 
+const loginPage string = "login.html"
+
 type MainHandler struct {
 	UserService   service.IUserService
 	JWTService    IJWTService
@@ -137,7 +139,7 @@ func (h *MainHandler) Index(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *MainHandler) GetLogin(w http.ResponseWriter, r *http.Request) {
-	h.Render(r.Context(), w, "login.html", map[string]any{
+	h.Render(r.Context(), w, loginPage, map[string]any{
 		"CSRF": csrf.Token(r),
 	})
 }
@@ -174,7 +176,7 @@ func (h *MainHandler) PostLogin(w http.ResponseWriter, r *http.Request) {
 	password := r.FormValue("password")
 
 	if username == "" || password == "" {
-		h.Render(r.Context(), w, "login.html", map[string]any{
+		h.Render(r.Context(), w, loginPage, map[string]any{
 			"CSRF":  csrf.Token(r),
 			"Error": "username and password required",
 		})
@@ -183,7 +185,7 @@ func (h *MainHandler) PostLogin(w http.ResponseWriter, r *http.Request) {
 
 	user, err := h.UserService.AuthenticateUser(r.Context(), username, password)
 	if err != nil {
-		h.Render(r.Context(), w, "login.html", map[string]any{
+		h.Render(r.Context(), w, loginPage, map[string]any{
 			"CSRF":  csrf.Token(r),
 			"Error": "invalid credentials",
 		})

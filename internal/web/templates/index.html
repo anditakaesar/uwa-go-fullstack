@@ -1,5 +1,28 @@
 {{define "title"}}Home - My App{{end}}
 {{define "content"}}
-    <h1>Hello templating</h1>
-    <h2>{{.Name}}</h2>
+<article class="prose prose-slate lg:prose-xl max-w-none">
+    <h1 class="text-4xl font-extrabold text-gray-900 mb-6">Welcome!</h1>
+    <p class="text-lg text-gray-700 leading-relaxed mb-4">
+        Typography is more than just choosing a font. It is the art and technique of arranging type to make written language legible, readable, and appealing when displayed. In the digital age, this involves a careful balance between aesthetics and functional performance.
+    </p>
+    
+    <h2 class="text-2xl font-bold text-gray-800 mt-8 mb-4">Why Hierarchy Matters</h2>
+    <p class="text-gray-600 mb-4">
+        A strong typographic hierarchy guides the reader's eye to the most important information first. By using different scales, weights, and colors, we can create a visual path that makes long-form content digestible. Without it, even the most insightful prose becomes a daunting "wall of text."
+    </p>
+
+    <blockquote class="border-l-4 border-blue-500 pl-4 italic text-gray-700 my-8">
+        "Design is intelligence made visible." — Alina Wheeler
+    </blockquote>
+
+    <p class="text-gray-600">
+        As you build out this layout, consider how whitespace (or "negative space") acts as a breathing room for your content. In this 1200px container, the margins ensure that the lines of text don't stretch too wide, which maintains optimal readability for the human eye.
+    </p>
+</article>
+
+<article class="prose prose-slate lg:prose-xl max-w-none mt-8">
+    {{if .Token}}
+        <textarea disabled rows="8" cols="60">{{.Token}}</textarea>
+    {{end}}
+</article>
 {{end}}
