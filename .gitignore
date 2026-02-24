@@ -62,3 +62,7 @@ __debug_bin*
 
 # uploads folder
 uploads/
+
+# generated
+coverage.out
+report.json
