@@ -31,11 +31,9 @@ jobs:
           go-version: '1.25'
 
       - name: Run Tests and Generate Coverage
-        # Optimized to run tests once and produce both outputs
         run: |
-          go test -v -coverprofile=coverage.out -json ./internal/... > report.json || true
-          # Note: '|| true' ensures the scan still runs even if tests fail, 
-          # so you can see the failures in the Sonar dashboard.
+          # Run tests only for internal, and ensure coverage is tracked for those packages
+          go test -v ./internal/... -coverpkg=./internal/... -coverprofile=coverage.out -json > report.json || true
 
       - name: SonarQube Scan
         uses: sonarsource/sonarqube-scan-action@master
