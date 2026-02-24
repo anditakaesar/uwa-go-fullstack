@@ -32,8 +32,17 @@ jobs:
 
       - name: Run Tests and Generate Coverage
         run: |
-          # Run tests only for internal, and ensure coverage is tracked for those packages
+          # 1. Run tests
           go test -v ./internal/... -coverpkg=./internal/... -coverprofile=coverage.out -json > report.json || true
+          
+          # 2. Get your module name from go.mod (e.g., github.com/user/repo)
+          MODNAME=$(go list -m)
+          
+          # 3. Strip the module name from the coverage file so paths start with 'internal/'
+          sed -i "s|$MODNAME/||g" coverage.out
+          
+          # 4. Debug: Print the first few lines to the logs so we can verify
+          head -n 5 coverage.out
 
       - name: SonarQube Scan
         uses: sonarsource/sonarqube-scan-action@master
