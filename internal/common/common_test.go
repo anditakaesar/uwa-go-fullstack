@@ -41,7 +41,7 @@ func TestSort_ToSQLSort(test *testing.T) {
 		assert.Equal(t, "created_at ASC", got)
 	})
 
-	test.Run("success ASC", func(t *testing.T) {
+	test.Run("success DESC", func(t *testing.T) {
 		s := common.Sort{
 			Field:     "created_at",
 			Direction: common.SORT_DESC,

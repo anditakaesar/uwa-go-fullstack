@@ -51,7 +51,8 @@ func (s *UserService) AuthenticateUser(ctx context.Context, username string, pas
 		return nil, fmt.Errorf("error while getting user: %v", err)
 	}
 
-	if !s.passChecker.CheckPassword(password, getUser.Password) {
+	success, err := s.passChecker.CheckPassword(password, getUser.Password)
+	if err != nil || !success {
 		return nil, fmt.Errorf("wrong password attempt: %s", password)
 	}
 

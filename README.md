@@ -39,7 +39,7 @@ Libraries:
 - github.com/gorilla/csrf
 - github.com/gorilla/sessions
 - github.com/jackc/pgx/v5
-- golang.org/x/crypto
+- golang.org/x/crypto/argon2
 - golang-migrate
 
 Run `$ go mod vendor` to resolve references
@@ -61,6 +61,8 @@ Check `Makefile`
 - To seed initial users: run `$ make seed-database` OR run manually
 `$ DB_URL="postgres://here" go run ./cmd/seed/main.go`. Seed file can be done using separate `.csv` files:
     - `cmd/seed/users.csv` contains seed data for `users` table
+- To generate new mocks `$ make mockery`
+- To test the code `$ make test`
 
 ### Env
 Environment variables are located in file `.env-example`. This file eventualy will be `.env` on the deployemnt environment or loaded through different manners.
@@ -79,7 +81,7 @@ HOSTNAME="http://localhost:3000"
 - TBD
 
 ## API
-APIs are designed to utilize JSON:API specification [JSON:API Spec](https://jsonapi.org)
+~~APIs are designed to utilize JSON:API specification~~ [JSON:API Spec](https://jsonapi.org). At some point, simple json should be enough.
 ### GET /
 Return the page to login via web.
 

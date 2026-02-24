@@ -36,7 +36,7 @@ func (_m *MockIPasswordChecker) EXPECT() *MockIPasswordChecker_Expecter {
 }
 
 // CheckPassword provides a mock function for the type MockIPasswordChecker
-func (_mock *MockIPasswordChecker) CheckPassword(password string, hash string) bool {
+func (_mock *MockIPasswordChecker) CheckPassword(password string, hash string) (bool, error) {
 	ret := _mock.Called(password, hash)
 
 	if len(ret) == 0 {
@@ -44,12 +44,21 @@ func (_mock *MockIPasswordChecker) CheckPassword(password string, hash string) b
 	}
 
 	var r0 bool
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(string, string) (bool, error)); ok {
+		return returnFunc(password, hash)
+	}
 	if returnFunc, ok := ret.Get(0).(func(string, string) bool); ok {
 		r0 = returnFunc(password, hash)
 	} else {
 		r0 = ret.Get(0).(bool)
 	}
-	return r0
+	if returnFunc, ok := ret.Get(1).(func(string, string) error); ok {
+		r1 = returnFunc(password, hash)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
 }
 
 // MockIPasswordChecker_CheckPassword_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'CheckPassword'
@@ -82,12 +91,12 @@ func (_c *MockIPasswordChecker_CheckPassword_Call) Run(run func(password string,
 	return _c
 }
 
-func (_c *MockIPasswordChecker_CheckPassword_Call) Return(b bool) *MockIPasswordChecker_CheckPassword_Call {
-	_c.Call.Return(b)
+func (_c *MockIPasswordChecker_CheckPassword_Call) Return(b bool, err error) *MockIPasswordChecker_CheckPassword_Call {
+	_c.Call.Return(b, err)
 	return _c
 }
 
-func (_c *MockIPasswordChecker_CheckPassword_Call) RunAndReturn(run func(password string, hash string) bool) *MockIPasswordChecker_CheckPassword_Call {
+func (_c *MockIPasswordChecker_CheckPassword_Call) RunAndReturn(run func(password string, hash string) (bool, error)) *MockIPasswordChecker_CheckPassword_Call {
 	_c.Call.Return(run)
 	return _c
 }

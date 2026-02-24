@@ -11,6 +11,7 @@ type values struct {
 	CookieSecret string
 	CSRFSecret   string
 	JWTSecret    string
+	PassSecret   string
 	UploadDir    string
 	HostName     string
 }
@@ -23,6 +24,7 @@ func init() {
 		CookieSecret: os.Getenv("COOKIE_SECRET"),
 		CSRFSecret:   os.Getenv("CSRF_SECRET"),
 		JWTSecret:    os.Getenv("JWT_SECRET"),
+		PassSecret:   os.Getenv("PASS_SECRET"),
 		UploadDir:    os.Getenv("UPLOAD_DIR"),
 		HostName:     os.Getenv("HOSTNAME"),
 	}

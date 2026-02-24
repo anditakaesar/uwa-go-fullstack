@@ -19,5 +19,5 @@ type IUnitOfWork interface {
 
 type IPasswordChecker interface {
 	HashPassword(password string) (string, error)
-	CheckPassword(password string, hash string) bool
+	CheckPassword(password string, hash string) (bool, error)
 }

@@ -158,7 +158,7 @@ func TestUserService_AuthenticateUser(test *testing.T) {
 		}
 
 		m.userRepo.On("GetUser", m.ctx, userResponse.Username).Return(&userResponse, nil).Once()
-		m.passChecker.On("CheckPassword", userResponse.Password, userResponse.Password).Return(true).Once()
+		m.passChecker.On("CheckPassword", userResponse.Password, userResponse.Password).Return(true, nil).Once()
 
 		s := service.NewUserService(m.userRepo, m.passChecker)
 		got, gotErr := s.AuthenticateUser(m.ctx, userResponse.Username, userResponse.Password)
@@ -182,7 +182,7 @@ func TestUserService_AuthenticateUser(test *testing.T) {
 		}
 
 		m.userRepo.On("GetUser", m.ctx, userResponse.Username).Return(&userResponse, nil).Once()
-		m.passChecker.On("CheckPassword", userResponse.Password, userResponse.Password).Return(false).Once()
+		m.passChecker.On("CheckPassword", userResponse.Password, userResponse.Password).Return(false, nil).Once()
 
 		s := service.NewUserService(m.userRepo, m.passChecker)
 		got, gotErr := s.AuthenticateUser(m.ctx, userResponse.Username, userResponse.Password)
