@@ -6,7 +6,6 @@ import (
 	"fmt"
 
 	"github.com/anditakaesar/uwa-go-fullstack/internal/common"
-	"github.com/anditakaesar/uwa-go-fullstack/internal/env"
 	"github.com/anditakaesar/uwa-go-fullstack/internal/xlog"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -16,13 +15,13 @@ type database struct {
 	db *pgxpool.Pool
 }
 
-func NewDatabase() (*database, error) {
-	pool, err := pgxpool.New(context.Background(), env.Values.DBUrl)
+func NewDatabase(ctx context.Context, dbURL string) (*database, error) {
+	pool, err := pgxpool.New(ctx, dbURL)
 	if err != nil {
 		return nil, err
 	}
 
-	err = pool.Ping(context.Background())
+	err = pool.Ping(ctx)
 	if err != nil {
 		return nil, err
 	}

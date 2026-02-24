@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/anditakaesar/uwa-go-fullstack/internal/domain"
-	"github.com/anditakaesar/uwa-go-fullstack/internal/env"
 	"github.com/golang-jwt/jwt/v5"
 )
 
@@ -13,9 +12,9 @@ type JWTService struct {
 	secret []byte
 }
 
-func NewJWTService() *JWTService {
+func NewJWTService(secret string) *JWTService {
 	return &JWTService{
-		secret: []byte(env.Values.JWTSecret),
+		secret: []byte(secret),
 	}
 }
 

@@ -17,3 +17,6 @@ seed-database:
 
 mockery:
 	$(TOOLS_MOCKERY)
+
+test:
+	go test -v ./internal/...

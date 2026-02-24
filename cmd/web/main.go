@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"os"
@@ -12,7 +13,7 @@ import (
 )
 
 func main() {
-	db, err := infra.NewDatabase()
+	db, err := infra.NewDatabase(context.Background(), env.Values.DBUrl)
 	if err != nil {
 		xlog.Logger.Error(fmt.Sprintf("unable to connect to database: %v", err))
 		os.Exit(1)

@@ -3,7 +3,6 @@ package infra
 import (
 	"net/http"
 
-	"github.com/anditakaesar/uwa-go-fullstack/internal/env"
 	"github.com/gorilla/sessions"
 )
 
@@ -11,16 +10,16 @@ type CookieSvc struct {
 	cookieStore *sessions.CookieStore
 }
 
-func NewCookieService() *CookieSvc {
+func NewCookieService(isDev bool, secret string) *CookieSvc {
 	cookieStore := sessions.NewCookieStore(
-		[]byte(env.Values.CookieSecret),
+		[]byte(secret),
 	)
 
 	cookieStore.Options = &sessions.Options{
 		Path:     "/",
 		HttpOnly: true,
 		SameSite: http.SameSiteLaxMode,
-		Secure:   !env.Values.IsDevelopment(), // true in prod
+		Secure:   !isDev, // true in prod
 	}
 
 	return &CookieSvc{
