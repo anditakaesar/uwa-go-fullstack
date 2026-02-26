@@ -1,9 +1,11 @@
 package handler_test
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
+	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -22,6 +24,7 @@ type mockItems struct {
 	cookieSvc   *mocks.MockICookieService
 	userSvc     *mocks.MockIUserService
 	jwtSvc      *mocks.MockIJWTService
+	fileSvc     *mocks.MockIFileService
 	webRenderer handler.IWebRenderer
 	anything    string
 }
@@ -46,6 +49,7 @@ func setupMocks() (*mockItems, handler.MainHandlerDeps) {
 	cookieSvc := new(mocks.MockICookieService)
 	userSvc := new(mocks.MockIUserService)
 	jwtSvc := new(mocks.MockIJWTService)
+	fileSvc := new(mocks.MockIFileService)
 	renderFn := func(ctx context.Context, w http.ResponseWriter, s string, m map[string]any) {
 		w.WriteHeader(http.StatusOK)
 		fmt.Fprintf(w, "rendered")
@@ -57,11 +61,13 @@ func setupMocks() (*mockItems, handler.MainHandlerDeps) {
 			userSvc:     userSvc,
 			jwtSvc:      jwtSvc,
 			webRenderer: webRenderer,
+			fileSvc:     fileSvc,
 			anything:    mock.Anything,
 		}, handler.MainHandlerDeps{
 			UserService:   userSvc,
 			JWTService:    jwtSvc,
 			CookieService: cookieSvc,
+			FileService:   fileSvc,
 			WebRenderer:   webRenderer,
 		}
 }
@@ -476,4 +482,109 @@ func TestMainHandler_GetUploadPage(test *testing.T) {
 		m.cookieSvc.AssertExpectations(t)
 	})
 
+}
+
+func TestMainHandler_PostUpload(test *testing.T) {
+	test.Parallel()
+
+	test.Run("success", func(t *testing.T) {
+		m, d := setupMocks()
+		h := handler.NewMainHandler(d)
+
+		m.fileSvc.On("Save", m.anything, m.anything).Return("test.png", nil).Once()
+
+		body := &bytes.Buffer{}
+		writer := multipart.NewWriter(body)
+		part, _ := writer.CreateFormFile("file", "test.png")
+		part.Write([]byte("fake-file-content"))
+		writer.Close()
+
+		req := httptest.NewRequest("POST", "/upload", body)
+		req.Header.Set("Content-Type", writer.FormDataContentType())
+		rr := httptest.NewRecorder()
+
+		h.PostUpload(rr, req)
+		assert.Equal(t, http.StatusOK, rr.Code)
+
+		m.fileSvc.AssertExpectations(t)
+	})
+
+	test.Run("error on save", func(t *testing.T) {
+		m, d := setupMocks()
+		h := handler.NewMainHandler(d)
+
+		var capturedData map[string]any
+		d.WebRenderer.(*mockWebRenderer).render2Fn = func(ctx context.Context, w http.ResponseWriter, s string, data map[string]any) {
+			capturedData = data
+			w.WriteHeader(http.StatusOK)
+		}
+
+		m.fileSvc.On("Save", m.anything, m.anything).Return("", errors.New("error_Save")).Once()
+
+		body := &bytes.Buffer{}
+		writer := multipart.NewWriter(body)
+		part, _ := writer.CreateFormFile("file", "test.png")
+		part.Write([]byte("fake-file-content"))
+		writer.Close()
+
+		req := httptest.NewRequest("POST", "/upload", body)
+		req.Header.Set("Content-Type", writer.FormDataContentType())
+		rr := httptest.NewRecorder()
+
+		h.PostUpload(rr, req)
+		assert.Equal(t, http.StatusOK, rr.Code)
+		assert.Equal(t, "error while performing save file request", capturedData["Error"])
+
+		m.fileSvc.AssertExpectations(t)
+	})
+
+	test.Run("error parsemultipart form", func(t *testing.T) {
+		m, d := setupMocks()
+
+		var capturedData map[string]any
+		d.WebRenderer.(*mockWebRenderer).render2Fn = func(ctx context.Context, w http.ResponseWriter, s string, data map[string]any) {
+			capturedData = data
+			w.WriteHeader(http.StatusOK)
+		}
+
+		h := handler.NewMainHandler(d)
+
+		// Send a Content-Type that claims to be multipart but has no boundary
+		req := httptest.NewRequest("POST", "/upload", strings.NewReader("not a multipart body"))
+		req.Header.Set("Content-Type", "multipart/form-data") // Missing boundary parameter
+
+		rr := httptest.NewRecorder()
+		h.PostUpload(rr, req)
+
+		assert.Equal(t, "error when parsing file", capturedData["Error"])
+		m.fileSvc.AssertNotCalled(t, "Save", mock.Anything, mock.Anything)
+	})
+
+	test.Run("error file handler", func(t *testing.T) {
+		m, d := setupMocks()
+
+		var capturedData map[string]any
+		d.WebRenderer.(*mockWebRenderer).render2Fn = func(ctx context.Context, w http.ResponseWriter, s string, data map[string]any) {
+			capturedData = data
+			w.WriteHeader(http.StatusOK)
+		}
+
+		h := handler.NewMainHandler(d)
+
+		// Create a valid multipart body but use the wrong field name
+		body := &bytes.Buffer{}
+		writer := multipart.NewWriter(body)
+		part, _ := writer.CreateFormFile("wrong_field_name", "test.png") // Not "file"
+		part.Write([]byte("some data"))
+		writer.Close()
+
+		req := httptest.NewRequest("POST", "/upload", body)
+		req.Header.Set("Content-Type", writer.FormDataContentType())
+
+		rr := httptest.NewRecorder()
+		h.PostUpload(rr, req)
+
+		assert.Equal(t, "bad request", capturedData["Error"])
+		m.fileSvc.AssertNotCalled(t, "Save", mock.Anything, mock.Anything)
+	})
 }

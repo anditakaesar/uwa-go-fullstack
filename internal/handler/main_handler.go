@@ -2,17 +2,11 @@ package handler
 
 import (
 	"context"
-	"fmt"
-	"io"
 	"net/http"
-	"os"
-	"time"
 
-	"github.com/anditakaesar/uwa-go-fullstack/internal/domain"
 	"github.com/anditakaesar/uwa-go-fullstack/internal/env"
 	"github.com/anditakaesar/uwa-go-fullstack/internal/service"
 	"github.com/anditakaesar/uwa-go-fullstack/internal/xerror"
-	"github.com/go-chi/chi/v5"
 	"github.com/gorilla/csrf"
 )
 
@@ -25,6 +19,7 @@ type MainHandler struct {
 	UserService   service.IUserService
 	JWTService    IJWTService
 	CookieService ICookieService
+	FileService   service.IFileService
 	Render        func(context.Context, http.ResponseWriter, string, map[string]any)
 }
 
@@ -32,6 +27,7 @@ type MainHandlerDeps struct {
 	UserService   service.IUserService
 	JWTService    IJWTService
 	CookieService ICookieService
+	FileService   service.IFileService
 	WebRenderer   IWebRenderer
 }
 
@@ -40,81 +36,8 @@ func NewMainHandler(dep MainHandlerDeps) *MainHandler {
 		UserService:   dep.UserService,
 		JWTService:    dep.JWTService,
 		CookieService: dep.CookieService,
+		FileService:   dep.FileService,
 		Render:        dep.WebRenderer.Render2,
-	}
-}
-
-func SetupMainRoutes(router chi.Router, handler *MainHandler) {
-	endpoints := []Endpoint{
-		{
-			HttpMethod: http.MethodGet,
-			Path:       "/",
-			Handler:    handler.Index,
-		},
-
-		{
-			HttpMethod: http.MethodGet,
-			Path:       "/login",
-			Handler:    handler.GetLogin,
-		},
-
-		{
-			HttpMethod: http.MethodPost,
-			Path:       "/login",
-			Handler:    MakeHandler(handler.DoLogin),
-		},
-	}
-
-	protectedEndpoints := []EndpointWithMiddleware{
-		{
-			Endpoint: Endpoint{
-				HttpMethod: http.MethodGet,
-				Path:       "/logout",
-				Handler:    MakeHandler(handler.DoLogout),
-			},
-			Middlewares: []func(http.Handler) http.Handler{
-				RequireAuth(),
-				CSRFMiddleware(),
-			},
-		},
-		{
-			Endpoint: Endpoint{
-				HttpMethod: http.MethodGet,
-				Path:       "/upload",
-				Handler:    handler.GetUploadPage,
-			},
-			Middlewares: []func(http.Handler) http.Handler{
-				RequireAuth(),
-				RequireRole([]domain.Role{domain.RoleAdmin}),
-				CSRFMiddleware(),
-			},
-		},
-		{
-			Endpoint: Endpoint{
-				HttpMethod: http.MethodPost,
-				Path:       "/upload",
-				Handler:    handler.PostUpload,
-			},
-			Middlewares: []func(http.Handler) http.Handler{
-				RequireAuth(),
-				CSRFMiddleware(),
-			},
-		},
-	}
-
-	router.Group(func(r chi.Router) {
-		r.Use(CSRFMiddleware())
-		for _, endpoint := range endpoints {
-			r.MethodFunc(endpoint.HttpMethod, endpoint.Path, endpoint.Handler)
-		}
-	})
-
-	for _, e := range protectedEndpoints {
-		if len(e.Middlewares) > 0 {
-			router.With(e.Middlewares...).MethodFunc(e.HttpMethod, e.Path, e.Handler)
-		} else {
-			router.MethodFunc(e.HttpMethod, e.Path, e.Handler)
-		}
 	}
 }
 
@@ -242,49 +165,11 @@ func (h *MainHandler) PostUpload(w http.ResponseWriter, r *http.Request) {
 	}
 	defer file.Close()
 
-	buff := make([]byte, 512)
-	_, err = file.Read(buff)
-	if err != nil {
-		h.Render(r.Context(), w, uploadHTML, map[string]any{
-			"CSRF":  csrf.Token(r),
-			"Error": "error while processing the file",
-		})
-		return
-	}
-
-	_, err = file.Seek(0, 0)
-	if err != nil {
-		h.Render(r.Context(), w, uploadHTML, map[string]any{
-			"CSRF":  csrf.Token(r),
-			"Error": "error while processing the file",
-		})
-		return
-	}
-
-	if !env.UPLOAD_ALLOWED_TYPES[http.DetectContentType(buff)] {
-		h.Render(r.Context(), w, uploadHTML, map[string]any{
-			"CSRF":  csrf.Token(r),
-			"Error": "file type not allowed",
-		})
-		return
-	}
-
-	newName := fmt.Sprintf("%d_%s", time.Now().Unix(), handler.Filename)
-	dst, err := os.Create(env.Values.UploadDir + "/" + newName)
+	newName, err := h.FileService.Save(handler.Filename, file)
 	if err != nil {
 		h.Render(r.Context(), w, uploadHTML, map[string]any{
 			"CSRF":  csrf.Token(r),
 			"Error": "error while performing save file request",
-		})
-		return
-	}
-	defer dst.Close()
-
-	_, err = io.Copy(dst, file)
-	if err != nil {
-		h.Render(r.Context(), w, uploadHTML, map[string]any{
-			"CSRF":  csrf.Token(r),
-			"Error": "error while performing copy file request",
 		})
 		return
 	}

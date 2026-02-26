@@ -12,6 +12,7 @@ type Services struct {
 	UserService   *service.UserService
 	JWTService    *JWTService
 	CookieService *CookieSvc
+	FileService   *service.FileService
 	WebRenderer   *web.Renderer
 }
 
@@ -20,11 +21,13 @@ func NewInfra(pool *pgxpool.Pool) *Services {
 	userSvc := service.NewUserService(userRepo, NewPasswordHelper(env.Values.PassSecret))
 	jwtSvc := NewJWTService(env.Values.JWTSecret)
 	cookieService := NewCookieService(env.Values.IsDevelopment(), env.Values.CookieSecret)
+	fileSvc := service.NewFileService(env.Values.UploadDir, env.UPLOAD_ALLOWED_TYPES)
 
 	return &Services{
 		UserService:   userSvc,
 		JWTService:    jwtSvc,
 		CookieService: cookieService,
+		FileService:   fileSvc,
 		WebRenderer:   web.NewRenderer(),
 	}
 }

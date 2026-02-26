@@ -55,6 +55,7 @@ func SetupServer(dep *ServerDependency) *chi.Mux {
 		UserService:   infraSvc.UserService,
 		JWTService:    infraSvc.JWTService,
 		CookieService: infraSvc.CookieService,
+		FileService:   infraSvc.FileService,
 		WebRenderer:   infraSvc.WebRenderer,
 	})
 
