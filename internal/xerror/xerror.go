@@ -26,12 +26,19 @@ type ErrorPermission struct {
 
 func (e *ErrorPermission) Error() string { return e.Message }
 
-// ErrorPermission represents authorization (RBAC) issues
+// ErrorBadRequest represents client request errors
 type ErrorBadRequest struct {
 	Message string
 }
 
 func (e *ErrorBadRequest) Error() string { return e.Message }
+
+// ErrorToken represents token-related issues
+type ErrorToken struct {
+	Message string
+}
+
+func (e *ErrorToken) Error() string { return e.Message }
 
 // DefineStatusCode maps custom error types to HTTP Status Codes
 func DefineStatusCode(err error) int {
@@ -53,6 +60,11 @@ func DefineStatusCode(err error) int {
 	var errNotFound *ErrorNotFound
 	if errors.As(err, &errNotFound) {
 		return http.StatusNotFound
+	}
+
+	var errBadRequest *ErrorBadRequest
+	if errors.As(err, &errBadRequest) {
+		return http.StatusBadRequest
 	}
 
 	// Fallback for everything else

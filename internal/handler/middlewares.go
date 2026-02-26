@@ -12,17 +12,7 @@ import (
 	"github.com/anditakaesar/uwa-go-fullstack/internal/service"
 	"github.com/anditakaesar/uwa-go-fullstack/internal/xlog"
 	"github.com/gorilla/csrf"
-	"github.com/gorilla/sessions"
 )
-
-type ICookieService interface {
-	Get(r *http.Request, name string) (*sessions.Session, error)
-}
-
-type IJWTService interface {
-	Verify(token string) (domain.UserClaims, error)
-	IssueJWT(userID int64, secret []byte) (string, error)
-}
 
 type Middleware func(http.Handler) http.Handler
 
@@ -53,7 +43,6 @@ func ResolveAuth(
 	userService service.IUserService,
 	jwtService IJWTService,
 ) Middleware {
-
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			session, err := cookieStore.Get(r, "auth_session")
@@ -90,10 +79,7 @@ func ResolveAuth(
 	}
 }
 
-func ResolveUser(
-	userService service.IUserService,
-) Middleware {
-
+func ResolveUser(userService service.IUserService) Middleware {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			identity, ok := r.Context().Value(domain.IdentityKey).(domain.Identity)

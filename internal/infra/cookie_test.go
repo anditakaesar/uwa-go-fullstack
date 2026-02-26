@@ -17,18 +17,30 @@ func TestNewCookieService(test *testing.T) {
 	})
 }
 
-func TestCookieSvc_Get(test *testing.T) {
+func TestCookieSvc_GetAndSave(test *testing.T) {
+	secret := "very-secret-key"
+	svc := NewCookieService(true, secret)
+	sessionName := "auth_session"
+
 	test.Run("success", func(t *testing.T) {
-		svc := NewCookieService(true, "very-secret-key")
 		req := httptest.NewRequest("GET", "http://localhost", nil)
+		rr := httptest.NewRecorder()
 
-		session, err := svc.Get(req, "session-name")
-		if err != nil {
-			t.Fatalf("Failed to get session: %v", err)
-		}
+		session, err := svc.Get(req, sessionName)
+		assert.NoError(t, err)
+		session.Values["user_id"] = 123
 
-		if session.Name() != "session-name" {
-			t.Errorf("Expected session name 'session-name', got %s", session.Name())
-		}
+		err = svc.Save(session, req, rr)
+		assert.NoError(t, err)
+
+		cookieHeader := rr.Result().Header.Get("Set-Cookie")
+		assert.NotEqual(t, "", cookieHeader)
+
+		req2 := httptest.NewRequest("GET", "http://localhost", nil)
+		req2.Header.Set("Cookie", cookieHeader)
+
+		session2, err := svc.Get(req2, sessionName)
+		assert.NoError(t, err)
+		assert.Equal(t, 123, session2.Values["user_id"])
 	})
 }

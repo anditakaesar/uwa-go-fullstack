@@ -105,3 +105,66 @@ func (_c *MockICookieService_Get_Call) RunAndReturn(run func(r *http.Request, na
 	_c.Call.Return(run)
 	return _c
 }
+
+// Save provides a mock function for the type MockICookieService
+func (_mock *MockICookieService) Save(ses *sessions.Session, r *http.Request, w http.ResponseWriter) error {
+	ret := _mock.Called(ses, r, w)
+
+	if len(ret) == 0 {
+		panic("no return value specified for Save")
+	}
+
+	var r0 error
+	if returnFunc, ok := ret.Get(0).(func(*sessions.Session, *http.Request, http.ResponseWriter) error); ok {
+		r0 = returnFunc(ses, r, w)
+	} else {
+		r0 = ret.Error(0)
+	}
+	return r0
+}
+
+// MockICookieService_Save_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Save'
+type MockICookieService_Save_Call struct {
+	*mock.Call
+}
+
+// Save is a helper method to define mock.On call
+//   - ses *sessions.Session
+//   - r *http.Request
+//   - w http.ResponseWriter
+func (_e *MockICookieService_Expecter) Save(ses interface{}, r interface{}, w interface{}) *MockICookieService_Save_Call {
+	return &MockICookieService_Save_Call{Call: _e.mock.On("Save", ses, r, w)}
+}
+
+func (_c *MockICookieService_Save_Call) Run(run func(ses *sessions.Session, r *http.Request, w http.ResponseWriter)) *MockICookieService_Save_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 *sessions.Session
+		if args[0] != nil {
+			arg0 = args[0].(*sessions.Session)
+		}
+		var arg1 *http.Request
+		if args[1] != nil {
+			arg1 = args[1].(*http.Request)
+		}
+		var arg2 http.ResponseWriter
+		if args[2] != nil {
+			arg2 = args[2].(http.ResponseWriter)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+		)
+	})
+	return _c
+}
+
+func (_c *MockICookieService_Save_Call) Return(err error) *MockICookieService_Save_Call {
+	_c.Call.Return(err)
+	return _c
+}
+
+func (_c *MockICookieService_Save_Call) RunAndReturn(run func(ses *sessions.Session, r *http.Request, w http.ResponseWriter) error) *MockICookieService_Save_Call {
+	_c.Call.Return(run)
+	return _c
+}

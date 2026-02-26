@@ -11,7 +11,6 @@ import (
 	"github.com/anditakaesar/uwa-go-fullstack/internal/domain"
 	"github.com/anditakaesar/uwa-go-fullstack/internal/env"
 	"github.com/anditakaesar/uwa-go-fullstack/internal/service"
-	"github.com/anditakaesar/uwa-go-fullstack/internal/web"
 	"github.com/anditakaesar/uwa-go-fullstack/internal/xerror"
 	"github.com/go-chi/chi/v5"
 	"github.com/gorilla/csrf"
@@ -33,15 +32,15 @@ type MainHandlerDeps struct {
 	UserService   service.IUserService
 	JWTService    IJWTService
 	CookieService ICookieService
+	WebRenderer   IWebRenderer
 }
 
 func NewMainHandler(dep MainHandlerDeps) *MainHandler {
-	renderer := web.NewRenderer()
 	return &MainHandler{
 		UserService:   dep.UserService,
 		JWTService:    dep.JWTService,
 		CookieService: dep.CookieService,
-		Render:        renderer.Render2,
+		Render:        dep.WebRenderer.Render2,
 	}
 }
 
@@ -62,7 +61,7 @@ func SetupMainRoutes(router chi.Router, handler *MainHandler) {
 		{
 			HttpMethod: http.MethodPost,
 			Path:       "/login",
-			Handler:    MakeHandler(handler.PostLogin),
+			Handler:    MakeHandler(handler.DoLogin),
 		},
 	}
 
@@ -71,7 +70,7 @@ func SetupMainRoutes(router chi.Router, handler *MainHandler) {
 			Endpoint: Endpoint{
 				HttpMethod: http.MethodGet,
 				Path:       "/logout",
-				Handler:    handler.GetLogout,
+				Handler:    MakeHandler(handler.DoLogout),
 			},
 			Middlewares: []func(http.Handler) http.Handler{
 				RequireAuth(),
@@ -148,25 +147,26 @@ func (h *MainHandler) GetLogin(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func (h *MainHandler) GetLogout(w http.ResponseWriter, r *http.Request) {
-	session, _ := h.CookieService.Get(r, sessionKey)
+func (h *MainHandler) DoLogout(w http.ResponseWriter, r *http.Request) error {
+	session, err := h.CookieService.Get(r, sessionKey)
+	if err != nil {
+		return &xerror.ErrorSession{Message: err.Error()}
+	}
+
 	delete(session.Values, "user_id")
 	delete(session.Values, "username")
 	delete(session.Values, "token")
 
-	err := session.Save(r, w)
+	err = h.CookieService.Save(session, r, w)
 	if err != nil {
-		SendError(w, http.StatusInternalServerError, ErrObj{
-			Title:   "session error",
-			Message: err.Error(),
-		})
-		return
+		return &xerror.ErrorSession{Message: err.Error()}
 	}
 
 	http.Redirect(w, r, "/", http.StatusSeeOther)
+	return nil
 }
 
-func (h *MainHandler) PostLogin(w http.ResponseWriter, r *http.Request) error {
+func (h *MainHandler) DoLogin(w http.ResponseWriter, r *http.Request) error {
 	err := r.ParseForm()
 	if err != nil {
 		return &xerror.ErrorBadRequest{Message: err.Error()}
@@ -192,28 +192,25 @@ func (h *MainHandler) PostLogin(w http.ResponseWriter, r *http.Request) error {
 		return nil
 	}
 
-	session, _ := h.CookieService.Get(r, sessionKey)
+	session, err := h.CookieService.Get(r, sessionKey)
+	if err != nil {
+		return &xerror.ErrorSession{Message: err.Error()}
+	}
 	session.Values["user_id"] = user.ID
 	session.Values["username"] = user.Username
 
 	jwtToken, err := h.JWTService.IssueJWT(user.ID, []byte(env.Values.JWTSecret))
-	if err := session.Save(r, w); err != nil {
-		return fmt.Errorf("issuing token error: %v", err)
+	if err != nil {
+		return &xerror.ErrorToken{Message: err.Error()}
 	}
 
 	session.Values["token"] = jwtToken
 
-	err = session.Save(r, w)
+	err = h.CookieService.Save(session, r, w)
 	if err != nil {
-		return fmt.Errorf("creating session error: %v", err)
+		return &xerror.ErrorSession{Message: err.Error()}
 	}
 
-	// token based for api
-	// JSON(w, 200, map[string]any{
-	// 	"data": map[string]string{
-	// 		"token": jwtToken,
-	// 	},
-	// })
 	http.Redirect(w, r, "/", http.StatusSeeOther)
 	return nil
 }
@@ -292,12 +289,6 @@ func (h *MainHandler) PostUpload(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// API mode
-	// JSON(w, 200, map[string]any{
-	// 	"data": map[string]string{
-	// 		"path": "uploads/" + newName,
-	// 	},
-	// })
 	h.Render(r.Context(), w, uploadHTML, map[string]any{
 		"CSRF":     csrf.Token(r),
 		"Uploaded": "uploads/" + newName,
