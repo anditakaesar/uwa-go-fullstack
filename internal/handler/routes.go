@@ -14,13 +14,11 @@ func SetupMainRoutes(router chi.Router, handler *MainHandler) {
 			Path:       "/",
 			Handler:    handler.Index,
 		},
-
 		{
 			HttpMethod: http.MethodGet,
 			Path:       "/login",
 			Handler:    handler.GetLogin,
 		},
-
 		{
 			HttpMethod: http.MethodPost,
 			Path:       "/login",
@@ -75,8 +73,6 @@ func SetupMainRoutes(router chi.Router, handler *MainHandler) {
 	for _, e := range protectedEndpoints {
 		if len(e.Middlewares) > 0 {
 			router.With(e.Middlewares...).MethodFunc(e.HttpMethod, e.Path, e.Handler)
-		} else {
-			router.MethodFunc(e.HttpMethod, e.Path, e.Handler)
 		}
 	}
 }
