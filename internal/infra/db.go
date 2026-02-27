@@ -39,8 +39,16 @@ func (d *database) Close() {
 	d.db.Close()
 }
 
+// Unit of work
+
+type IInfraDB interface {
+	Begin(ctx context.Context) (pgx.Tx, error)
+	Close()
+	Ping(ctx context.Context) error
+}
+
 type unitOfWork struct {
-	db *pgxpool.Pool
+	db IInfraDB
 }
 
 func (u *unitOfWork) Do(ctx context.Context, fn func(ctx context.Context) error) error {
@@ -70,6 +78,6 @@ func (u *unitOfWork) Do(ctx context.Context, fn func(ctx context.Context) error)
 	return nil
 }
 
-func NewUnitOfWork(db *pgxpool.Pool) *unitOfWork {
-	return &unitOfWork{db: db}
+func NewUnitOfWork(idb IInfraDB) *unitOfWork {
+	return &unitOfWork{db: idb}
 }
