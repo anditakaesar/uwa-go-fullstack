@@ -2,7 +2,6 @@ package handler
 
 import (
 	"context"
-	"encoding/json"
 	"net/http"
 
 	"github.com/anditakaesar/uwa-go-fullstack/internal/env"
@@ -181,16 +180,4 @@ func (h *MainHandler) PostUpload(w http.ResponseWriter, r *http.Request) {
 		"CSRF":     csrf.Token(r),
 		"Uploaded": "uploads/" + newName,
 	})
-}
-
-func (h *MainHandler) CreateUser(w http.ResponseWriter, r *http.Request) error {
-	var req any
-	err := json.NewDecoder(r.Body).Decode(&req)
-	if err != nil {
-		return &xerror.ErrorBadRequest{Message: err.Error()}
-	}
-
-	// validate
-
-	return nil
 }

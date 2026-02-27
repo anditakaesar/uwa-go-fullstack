@@ -1,0 +1,42 @@
+package handler
+
+import (
+	"strings"
+	"time"
+
+	"github.com/anditakaesar/uwa-go-fullstack/internal/domain"
+	"github.com/anditakaesar/uwa-go-fullstack/internal/xerror"
+)
+
+type CreateUserRequest struct {
+	Username string `json:"username"`
+	Password string `json:"password"`
+}
+
+func (req *CreateUserRequest) Validate() error {
+	if strings.TrimSpace(req.Username) == "" {
+		return &xerror.ErrorValidation{Message: "username is required"}
+	}
+
+	if strings.TrimSpace(req.Password) == "" {
+		return &xerror.ErrorValidation{Message: "password is required"}
+	}
+
+	return nil
+}
+
+type UserResponse struct {
+	ID        int64     `json:"id"`
+	Username  string    `json:"username"`
+	Role      string    `json:"role"`
+	CreatedAt time.Time `json:"createdAt"`
+}
+
+func UserDomainToResponse(user *domain.User) UserResponse {
+	return UserResponse{
+		ID:        user.ID,
+		Username:  user.Username,
+		Role:      string(user.Role),
+		CreatedAt: user.CreatedAt,
+	}
+}

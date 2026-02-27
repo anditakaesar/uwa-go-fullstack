@@ -47,6 +47,12 @@ func TestDefineStatusCode(t *testing.T) {
 			want:    http.StatusInternalServerError,
 		},
 		{
+			name:    "validation error",
+			err:     &xerror.ErrorValidation{Message: "validation"},
+			wantMsg: "validation",
+			want:    http.StatusBadRequest,
+		},
+		{
 			name:    "default error",
 			err:     errors.New("some-error"),
 			wantMsg: "some-error",

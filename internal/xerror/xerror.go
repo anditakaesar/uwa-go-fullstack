@@ -40,6 +40,13 @@ type ErrorToken struct {
 
 func (e *ErrorToken) Error() string { return e.Message }
 
+// ErrorValidation represents client request validation issues
+type ErrorValidation struct {
+	Message string
+}
+
+func (e *ErrorValidation) Error() string { return e.Message }
+
 // DefineStatusCode maps custom error types to HTTP Status Codes
 func DefineStatusCode(err error) int {
 	if err == nil {
@@ -63,7 +70,8 @@ func DefineStatusCode(err error) int {
 	}
 
 	var errBadRequest *ErrorBadRequest
-	if errors.As(err, &errBadRequest) {
+	var errValidation *ErrorValidation
+	if errors.As(err, &errBadRequest) || errors.As(err, &errValidation) {
 		return http.StatusBadRequest
 	}
 

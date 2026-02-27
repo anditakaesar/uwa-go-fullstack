@@ -62,18 +62,6 @@ func SetupMainRoutes(router chi.Router, h *MainHandler) {
 				middlewares.CSRFMiddleware(),
 			},
 		},
-		{
-			Endpoint: Endpoint{
-				HttpMethod: http.MethodPost,
-				Path:       "/user",
-				Handler:    MakeHandler(h.CreateUser),
-			},
-			Middlewares: []func(http.Handler) http.Handler{
-				middlewares.RequireAuth(),
-				middlewares.RequireRole([]domain.Role{domain.RoleAdmin}),
-				middlewares.CSRFMiddleware(),
-			},
-		},
 	}
 
 	router.Group(func(r chi.Router) {
@@ -82,6 +70,28 @@ func SetupMainRoutes(router chi.Router, h *MainHandler) {
 			r.MethodFunc(endpoint.HttpMethod, endpoint.Path, endpoint.Handler)
 		}
 	})
+
+	for _, e := range protectedEndpoints {
+		if len(e.Middlewares) > 0 {
+			router.With(e.Middlewares...).MethodFunc(e.HttpMethod, e.Path, e.Handler)
+		}
+	}
+}
+
+func SetupUserApiRoutes(router chi.Router, h *UserApi) {
+	protectedEndpoints := []EndpointWithMiddleware{
+		{
+			Endpoint: Endpoint{
+				HttpMethod: http.MethodPost,
+				Path:       "/users",
+				Handler:    MakeHandler(h.CreateUser),
+			},
+			Middlewares: []func(http.Handler) http.Handler{
+				middlewares.RequireAuth(),
+				middlewares.RequireRole([]domain.Role{domain.RoleAdmin}),
+			},
+		},
+	}
 
 	for _, e := range protectedEndpoints {
 		if len(e.Middlewares) > 0 {
