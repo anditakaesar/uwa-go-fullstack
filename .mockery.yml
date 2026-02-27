@@ -3,7 +3,6 @@ dir: 'internal/mocks'
 filename: '{{.InterfaceName}}.go'
 force-file-write: true
 formatter: goimports
-generate: true
 include-auto-generated: false
 log-level: info
 structname: '{{.Mock}}{{.InterfaceName}}'
@@ -13,7 +12,24 @@ require-template-schema-exists: true
 template: testify
 template-schema: '{{.Template}}.schema.json'
 packages:
-  github.com/anditakaesar/uwa-go-fullstack/internal:
+  # github.com/anditakaesar/uwa-go-fullstack/internal: # use this to generate all
+  #   config:
+  #     all: true
+  #     recursive: true
+  github.com/anditakaesar/uwa-go-fullstack/internal/handler:
+    config:
+      all: true
+      recursive: true
+  github.com/anditakaesar/uwa-go-fullstack/internal/infra:
+    config:
+      all: false
+    interfaces:
+      ICookieService:
+      IJWTService:
+  github.com/anditakaesar/uwa-go-fullstack/internal/server:
+    config:
+      all: true
+  github.com/anditakaesar/uwa-go-fullstack/internal/service:
     config:
       all: true
       recursive: true

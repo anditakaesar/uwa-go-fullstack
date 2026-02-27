@@ -9,6 +9,7 @@ import (
 	"github.com/anditakaesar/uwa-go-fullstack/internal/env"
 	"github.com/anditakaesar/uwa-go-fullstack/internal/handler"
 	"github.com/anditakaesar/uwa-go-fullstack/internal/infra"
+	"github.com/anditakaesar/uwa-go-fullstack/internal/server/middlewares"
 	"github.com/anditakaesar/uwa-go-fullstack/internal/web"
 	"github.com/anditakaesar/uwa-go-fullstack/internal/xlog"
 	"github.com/go-chi/chi/v5"
@@ -61,13 +62,13 @@ func SetupServer(dep *ServerDependency) *chi.Mux {
 
 	router.Group(func(r chi.Router) {
 		// middlewares
-		r.Use(handler.GlobalErrorMiddleware)
-		r.Use(handler.ResolveAuth(
+		r.Use(middlewares.GlobalErrorMiddleware)
+		r.Use(middlewares.ResolveAuth(
 			infraSvc.CookieService,
 			infraSvc.UserService,
 			infraSvc.JWTService,
 		))
-		r.Use(handler.ResolveUser(infraSvc.UserService))
+		r.Use(middlewares.ResolveUser(infraSvc.UserService))
 
 		handler.SetupMainRoutes(r, mainHandler)
 	})

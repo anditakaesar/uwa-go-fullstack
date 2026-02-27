@@ -1,4 +1,4 @@
-package handler
+package middlewares
 
 import (
 	"context"
@@ -9,6 +9,8 @@ import (
 
 	"github.com/anditakaesar/uwa-go-fullstack/internal/domain"
 	"github.com/anditakaesar/uwa-go-fullstack/internal/env"
+	"github.com/anditakaesar/uwa-go-fullstack/internal/infra"
+	"github.com/anditakaesar/uwa-go-fullstack/internal/server/transport"
 	"github.com/anditakaesar/uwa-go-fullstack/internal/service"
 	"github.com/anditakaesar/uwa-go-fullstack/internal/xlog"
 	"github.com/gorilla/csrf"
@@ -39,9 +41,9 @@ func CSRFMiddleware() Middleware {
 }
 
 func ResolveAuth(
-	cookieStore ICookieService,
+	cookieStore infra.ICookieService,
 	userService service.IUserService,
-	jwtService IJWTService,
+	jwtService infra.IJWTService,
 ) Middleware {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -142,8 +144,8 @@ func GlobalErrorMiddleware(next http.Handler) http.Handler {
 			if rvr := recover(); rvr != nil {
 				xlog.Logger.Error(fmt.Sprintf("PANIC RECOVERED: %v", rvr))
 
-				SendError(w, http.StatusInternalServerError,
-					ErrObj{
+				transport.SendError(w, http.StatusInternalServerError,
+					transport.ErrObj{
 						Title:   "Internal Server Error",
 						Message: "An unexpected error happened.",
 					})

@@ -4,25 +4,26 @@ import (
 	"net/http"
 
 	"github.com/anditakaesar/uwa-go-fullstack/internal/domain"
+	"github.com/anditakaesar/uwa-go-fullstack/internal/server/middlewares"
 	"github.com/go-chi/chi/v5"
 )
 
-func SetupMainRoutes(router chi.Router, handler *MainHandler) {
+func SetupMainRoutes(router chi.Router, h *MainHandler) {
 	endpoints := []Endpoint{
 		{
 			HttpMethod: http.MethodGet,
 			Path:       "/",
-			Handler:    handler.Index,
+			Handler:    h.Index,
 		},
 		{
 			HttpMethod: http.MethodGet,
 			Path:       "/login",
-			Handler:    handler.GetLogin,
+			Handler:    h.GetLogin,
 		},
 		{
 			HttpMethod: http.MethodPost,
 			Path:       "/login",
-			Handler:    MakeHandler(handler.DoLogin),
+			Handler:    MakeHandler(h.DoLogin),
 		},
 	}
 
@@ -31,40 +32,52 @@ func SetupMainRoutes(router chi.Router, handler *MainHandler) {
 			Endpoint: Endpoint{
 				HttpMethod: http.MethodGet,
 				Path:       "/logout",
-				Handler:    MakeHandler(handler.DoLogout),
+				Handler:    MakeHandler(h.DoLogout),
 			},
 			Middlewares: []func(http.Handler) http.Handler{
-				RequireAuth(),
-				CSRFMiddleware(),
+				middlewares.RequireAuth(),
+				middlewares.CSRFMiddleware(),
 			},
 		},
 		{
 			Endpoint: Endpoint{
 				HttpMethod: http.MethodGet,
 				Path:       "/upload",
-				Handler:    handler.GetUploadPage,
+				Handler:    h.GetUploadPage,
 			},
 			Middlewares: []func(http.Handler) http.Handler{
-				RequireAuth(),
-				RequireRole([]domain.Role{domain.RoleAdmin}),
-				CSRFMiddleware(),
+				middlewares.RequireAuth(),
+				middlewares.RequireRole([]domain.Role{domain.RoleAdmin}),
+				middlewares.CSRFMiddleware(),
 			},
 		},
 		{
 			Endpoint: Endpoint{
 				HttpMethod: http.MethodPost,
 				Path:       "/upload",
-				Handler:    handler.PostUpload,
+				Handler:    h.PostUpload,
 			},
 			Middlewares: []func(http.Handler) http.Handler{
-				RequireAuth(),
-				CSRFMiddleware(),
+				middlewares.RequireAuth(),
+				middlewares.CSRFMiddleware(),
+			},
+		},
+		{
+			Endpoint: Endpoint{
+				HttpMethod: http.MethodPost,
+				Path:       "/user",
+				Handler:    MakeHandler(h.CreateUser),
+			},
+			Middlewares: []func(http.Handler) http.Handler{
+				middlewares.RequireAuth(),
+				middlewares.RequireRole([]domain.Role{domain.RoleAdmin}),
+				middlewares.CSRFMiddleware(),
 			},
 		},
 	}
 
 	router.Group(func(r chi.Router) {
-		r.Use(CSRFMiddleware())
+		r.Use(middlewares.CSRFMiddleware())
 		for _, endpoint := range endpoints {
 			r.MethodFunc(endpoint.HttpMethod, endpoint.Path, endpoint.Handler)
 		}

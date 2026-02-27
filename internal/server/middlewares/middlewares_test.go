@@ -1,4 +1,4 @@
-package handler_test
+package middlewares_test
 
 import (
 	"context"
@@ -10,11 +10,33 @@ import (
 
 	"github.com/anditakaesar/uwa-go-fullstack/internal/domain"
 	"github.com/anditakaesar/uwa-go-fullstack/internal/env"
-	"github.com/anditakaesar/uwa-go-fullstack/internal/handler"
+	"github.com/anditakaesar/uwa-go-fullstack/internal/mocks"
+	"github.com/anditakaesar/uwa-go-fullstack/internal/server/middlewares"
 	"github.com/gorilla/csrf"
 	"github.com/gorilla/sessions"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 )
+
+type mockItems struct {
+	cookieSvc *mocks.MockICookieService
+	userSvc   *mocks.MockIUserService
+	jwtSvc    *mocks.MockIJWTService
+	anything  string
+}
+
+func setupMocks() *mockItems {
+	cookieSvc := new(mocks.MockICookieService)
+	userSvc := new(mocks.MockIUserService)
+	jwtSvc := new(mocks.MockIJWTService)
+
+	return &mockItems{
+		cookieSvc: cookieSvc,
+		userSvc:   userSvc,
+		jwtSvc:    jwtSvc,
+		anything:  mock.Anything,
+	}
+}
 
 func TestCSRFMiddleware(test *testing.T) {
 	test.Parallel()
@@ -29,7 +51,7 @@ func TestCSRFMiddleware(test *testing.T) {
 		})
 
 		// Apply the middleware
-		middleware := handler.CSRFMiddleware()
+		middleware := middlewares.CSRFMiddleware()
 		handlerToTest := middleware(nextHandler)
 
 		// Create a POST request (CSRF usually ignores GET/HEAD by default)
@@ -57,7 +79,7 @@ func TestCSRFMiddleware(test *testing.T) {
 			w.WriteHeader(http.StatusOK)
 		})
 
-		middleware := handler.CSRFMiddleware()
+		middleware := middlewares.CSRFMiddleware()
 		handlerToTest := middleware(nextHandler)
 
 		// GET requests usually generate the token but don't enforce it
@@ -77,7 +99,7 @@ func TestResolveAuth(test *testing.T) {
 	test.Parallel()
 
 	test.Run("success with cookies", func(t *testing.T) {
-		m, _ := setupMocks()
+		m := setupMocks()
 
 		userID := int64(1)
 		sessionMock := &sessions.Session{
@@ -103,7 +125,7 @@ func TestResolveAuth(test *testing.T) {
 
 			w.WriteHeader(http.StatusOK)
 		})
-		middleware := handler.ResolveAuth(m.cookieSvc, m.userSvc, m.jwtSvc)
+		middleware := middlewares.ResolveAuth(m.cookieSvc, m.userSvc, m.jwtSvc)
 
 		handlerToTest := middleware(nextHandler)
 		req := httptest.NewRequest(http.MethodGet, "/", nil)
@@ -116,7 +138,7 @@ func TestResolveAuth(test *testing.T) {
 	})
 
 	test.Run("success with JWT", func(t *testing.T) {
-		m, _ := setupMocks()
+		m := setupMocks()
 
 		// Simulate cookie failure so it falls through to JWT
 		m.cookieSvc.On("Get", m.anything, "auth_session").Return(nil, errors.New("no cookie")).Once()
@@ -135,14 +157,14 @@ func TestResolveAuth(test *testing.T) {
 		req := httptest.NewRequest(http.MethodGet, "/", nil)
 		req.Header.Set("Authorization", "Bearer valid-token")
 
-		middleware := handler.ResolveAuth(m.cookieSvc, m.userSvc, m.jwtSvc)
+		middleware := middlewares.ResolveAuth(m.cookieSvc, m.userSvc, m.jwtSvc)
 		middleware(nextHandler).ServeHTTP(httptest.NewRecorder(), req)
 
 		m.jwtSvc.AssertExpectations(t)
 	})
 
 	test.Run("no credentials provided", func(t *testing.T) {
-		m, _ := setupMocks()
+		m := setupMocks()
 
 		// 1. Mock the cookie store to return an error (no session found)
 		m.cookieSvc.On("Get", m.anything, "auth_session").
@@ -160,7 +182,7 @@ func TestResolveAuth(test *testing.T) {
 			w.WriteHeader(http.StatusOK)
 		})
 
-		middleware := handler.ResolveAuth(m.cookieSvc, m.userSvc, m.jwtSvc)
+		middleware := middlewares.ResolveAuth(m.cookieSvc, m.userSvc, m.jwtSvc)
 
 		// 3. Request with NO headers and NO cookies
 		req := httptest.NewRequest(http.MethodGet, "/", nil)
@@ -178,7 +200,7 @@ func TestResolveAuth(test *testing.T) {
 
 func TestRequireAuth(test *testing.T) {
 	// 1. Setup the middleware
-	middleware := handler.RequireAuth()
+	middleware := middlewares.RequireAuth()
 
 	test.Run("authorized - user in context", func(t *testing.T) {
 		nextCalled := false
@@ -232,7 +254,7 @@ func TestRequireAuth(test *testing.T) {
 func TestRequireRole(test *testing.T) {
 	test.Parallel()
 
-	middleware := handler.RequireRole([]domain.Role{domain.RoleAdmin})
+	middleware := middlewares.RequireRole([]domain.Role{domain.RoleAdmin})
 
 	test.Run("no user in context", func(t *testing.T) {
 		nextHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -298,7 +320,7 @@ func TestRequireRole(test *testing.T) {
 
 func TestResolveUser(test *testing.T) {
 	test.Run("success user exist in context", func(t *testing.T) {
-		m, _ := setupMocks()
+		m := setupMocks()
 		m.userSvc.On("GetUserByID", m.anything, int64(1)).Return(&domain.User{
 			Base: domain.Base{
 				ID: 1,
@@ -316,7 +338,7 @@ func TestResolveUser(test *testing.T) {
 		ctx := context.WithValue(req.Context(), domain.IdentityKey, domain.Identity{UserID: 1})
 		req = req.WithContext(ctx)
 
-		middleware := handler.ResolveUser(m.userSvc)
+		middleware := middlewares.ResolveUser(m.userSvc)
 		rr := httptest.NewRecorder()
 		middleware(nextHandler).ServeHTTP(rr, req)
 
@@ -326,7 +348,7 @@ func TestResolveUser(test *testing.T) {
 	})
 
 	test.Run("success but user don't exist in context", func(t *testing.T) {
-		m, _ := setupMocks()
+		m := setupMocks()
 
 		nextHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			// should pass this
@@ -335,7 +357,7 @@ func TestResolveUser(test *testing.T) {
 
 		req := httptest.NewRequest(http.MethodGet, "/", nil)
 
-		middleware := handler.ResolveUser(m.userSvc)
+		middleware := middlewares.ResolveUser(m.userSvc)
 		rr := httptest.NewRecorder()
 		middleware(nextHandler).ServeHTTP(rr, req)
 
@@ -345,7 +367,7 @@ func TestResolveUser(test *testing.T) {
 	})
 
 	test.Run("success user exist in database", func(t *testing.T) {
-		m, _ := setupMocks()
+		m := setupMocks()
 		m.userSvc.On("GetUserByID", m.anything, int64(1)).Return(nil, errors.New("not found")).Once()
 
 		nextHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -357,7 +379,7 @@ func TestResolveUser(test *testing.T) {
 		ctx := context.WithValue(req.Context(), domain.IdentityKey, domain.Identity{UserID: 1})
 		req = req.WithContext(ctx)
 
-		middleware := handler.ResolveUser(m.userSvc)
+		middleware := middlewares.ResolveUser(m.userSvc)
 		rr := httptest.NewRecorder()
 		middleware(nextHandler).ServeHTTP(rr, req)
 
@@ -374,7 +396,7 @@ func TestGlobalErrorMiddleware(t *testing.T) {
 	})
 
 	// 2. Wrap it with the middleware
-	handlerToTest := handler.GlobalErrorMiddleware(bombHandler)
+	handlerToTest := middlewares.GlobalErrorMiddleware(bombHandler)
 
 	// 3. Execute the request
 	req := httptest.NewRequest(http.MethodGet, "/any-path", nil)

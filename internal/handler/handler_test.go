@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/anditakaesar/uwa-go-fullstack/internal/handler"
+	"github.com/anditakaesar/uwa-go-fullstack/internal/server/transport"
 	"github.com/anditakaesar/uwa-go-fullstack/internal/xerror"
 )
 
@@ -25,7 +26,7 @@ func TestSendJSON(test *testing.T) {
 		rr := httptest.NewRecorder()
 
 		// 3. Call the function
-		handler.SendJSON(rr, http.StatusCreated, data)
+		transport.SendJSON(rr, http.StatusCreated, data)
 
 		// 4. Assertions
 		// Check Status Code

@@ -2,9 +2,12 @@ package handler
 
 import (
 	"context"
+	"encoding/json"
 	"net/http"
 
 	"github.com/anditakaesar/uwa-go-fullstack/internal/env"
+	"github.com/anditakaesar/uwa-go-fullstack/internal/infra"
+	"github.com/anditakaesar/uwa-go-fullstack/internal/server/transport"
 	"github.com/anditakaesar/uwa-go-fullstack/internal/service"
 	"github.com/anditakaesar/uwa-go-fullstack/internal/xerror"
 	"github.com/gorilla/csrf"
@@ -17,16 +20,16 @@ const (
 
 type MainHandler struct {
 	UserService   service.IUserService
-	JWTService    IJWTService
-	CookieService ICookieService
+	JWTService    infra.IJWTService
+	CookieService infra.ICookieService
 	FileService   service.IFileService
 	Render        func(context.Context, http.ResponseWriter, string, map[string]any)
 }
 
 type MainHandlerDeps struct {
 	UserService   service.IUserService
-	JWTService    IJWTService
-	CookieService ICookieService
+	JWTService    infra.IJWTService
+	CookieService infra.ICookieService
 	FileService   service.IFileService
 	WebRenderer   IWebRenderer
 }
@@ -44,7 +47,7 @@ func NewMainHandler(dep MainHandlerDeps) *MainHandler {
 func (h *MainHandler) Index(w http.ResponseWriter, r *http.Request) {
 	session, err := h.CookieService.Get(r, sessionKey)
 	if err != nil {
-		SendError(w, http.StatusInternalServerError, ErrObj{
+		transport.SendError(w, http.StatusInternalServerError, transport.ErrObj{
 			Title:   "error when get auth_session",
 			Message: err.Error(),
 		})
@@ -178,4 +181,16 @@ func (h *MainHandler) PostUpload(w http.ResponseWriter, r *http.Request) {
 		"CSRF":     csrf.Token(r),
 		"Uploaded": "uploads/" + newName,
 	})
+}
+
+func (h *MainHandler) CreateUser(w http.ResponseWriter, r *http.Request) error {
+	var req any
+	err := json.NewDecoder(r.Body).Decode(&req)
+	if err != nil {
+		return &xerror.ErrorBadRequest{Message: err.Error()}
+	}
+
+	// validate
+
+	return nil
 }
