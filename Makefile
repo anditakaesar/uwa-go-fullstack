@@ -1,3 +1,6 @@
+include .env
+export
+
 TOOLS_MIGRATE="$$(pwd)/tools/migrate"
 TOOLS_MOCKERY="$$(pwd)/tools/mockery"
 MIGRATION_PATH="$$(pwd)/db/migrations"
