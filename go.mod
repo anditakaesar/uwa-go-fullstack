@@ -4,6 +4,7 @@ go 1.25.5
 
 require (
 	github.com/go-chi/chi/v5 v5.2.4
+	github.com/go-chi/cors v1.2.2
 	github.com/gorilla/csrf v1.7.3
 	github.com/gorilla/sessions v1.4.0
 	github.com/jackc/pgx/v5 v5.8.0
@@ -14,7 +15,6 @@ require (
 
 require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
-	github.com/go-chi/cors v1.2.2 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rogpeppe/go-internal v1.14.1 // indirect
 	github.com/stretchr/objx v0.5.2 // indirect

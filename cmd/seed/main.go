@@ -77,6 +77,7 @@ func readUserFromCSV(path string) ([]UserSeed, error) {
 }
 
 func seedUsers(ctx context.Context, services *infra.Services) {
+	// users, err := readUserFromCSV("users.csv") // for debug use this
 	users, err := readUserFromCSV("./cmd/seed/users.csv")
 	if err != nil {
 		xlog.Logger.Error(fmt.Sprintf("error reading user seed file: %v", err))
