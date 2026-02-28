@@ -31,5 +31,7 @@ packages:
       all: true
   github.com/anditakaesar/uwa-go-fullstack/internal/service:
     config:
-      all: true
-      recursive: true
+      all: false
+    interfaces:
+      IUserRepository:
+      IPasswordChecker:
