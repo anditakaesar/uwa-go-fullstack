@@ -180,6 +180,82 @@ func (_c *MockIUserService_CreateUser_Call) RunAndReturn(run func(ctx context.Co
 	return _c
 }
 
+// FindAll provides a mock function for the type MockIUserService
+func (_mock *MockIUserService) FindAll(ctx context.Context, param domain.FindAllUsersParam) ([]domain.User, *domain.FindAllUsersParam, error) {
+	ret := _mock.Called(ctx, param)
+
+	if len(ret) == 0 {
+		panic("no return value specified for FindAll")
+	}
+
+	var r0 []domain.User
+	var r1 *domain.FindAllUsersParam
+	var r2 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, domain.FindAllUsersParam) ([]domain.User, *domain.FindAllUsersParam, error)); ok {
+		return returnFunc(ctx, param)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, domain.FindAllUsersParam) []domain.User); ok {
+		r0 = returnFunc(ctx, param)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]domain.User)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, domain.FindAllUsersParam) *domain.FindAllUsersParam); ok {
+		r1 = returnFunc(ctx, param)
+	} else {
+		if ret.Get(1) != nil {
+			r1 = ret.Get(1).(*domain.FindAllUsersParam)
+		}
+	}
+	if returnFunc, ok := ret.Get(2).(func(context.Context, domain.FindAllUsersParam) error); ok {
+		r2 = returnFunc(ctx, param)
+	} else {
+		r2 = ret.Error(2)
+	}
+	return r0, r1, r2
+}
+
+// MockIUserService_FindAll_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'FindAll'
+type MockIUserService_FindAll_Call struct {
+	*mock.Call
+}
+
+// FindAll is a helper method to define mock.On call
+//   - ctx context.Context
+//   - param domain.FindAllUsersParam
+func (_e *MockIUserService_Expecter) FindAll(ctx interface{}, param interface{}) *MockIUserService_FindAll_Call {
+	return &MockIUserService_FindAll_Call{Call: _e.mock.On("FindAll", ctx, param)}
+}
+
+func (_c *MockIUserService_FindAll_Call) Run(run func(ctx context.Context, param domain.FindAllUsersParam)) *MockIUserService_FindAll_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 domain.FindAllUsersParam
+		if args[1] != nil {
+			arg1 = args[1].(domain.FindAllUsersParam)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockIUserService_FindAll_Call) Return(users []domain.User, findAllUsersParam *domain.FindAllUsersParam, err error) *MockIUserService_FindAll_Call {
+	_c.Call.Return(users, findAllUsersParam, err)
+	return _c
+}
+
+func (_c *MockIUserService_FindAll_Call) RunAndReturn(run func(ctx context.Context, param domain.FindAllUsersParam) ([]domain.User, *domain.FindAllUsersParam, error)) *MockIUserService_FindAll_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // GetUserByID provides a mock function for the type MockIUserService
 func (_mock *MockIUserService) GetUserByID(ctx context.Context, id int64) (*domain.User, error) {
 	ret := _mock.Called(ctx, id)

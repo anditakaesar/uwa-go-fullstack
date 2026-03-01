@@ -41,6 +41,16 @@ func UserDomainToResponse(user *domain.User) UserResponse {
 	}
 }
 
+func UserListToResponse(users []domain.User) []UserResponse {
+	results := make([]UserResponse, 0, len(users))
+	for _, user := range users {
+		u := UserDomainToResponse(&user)
+		results = append(results, u)
+	}
+
+	return results
+}
+
 type UpdateUserRequest struct {
 	OldPassword string `json:"oldPassword"`
 	Password    string `json:"password"`

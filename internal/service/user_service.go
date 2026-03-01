@@ -13,6 +13,7 @@ type IUserService interface {
 	AuthenticateUser(ctx context.Context, username string, password string) (*domain.User, error)
 	GetUserByID(ctx context.Context, id int64) (*domain.User, error)
 	Update(ctx context.Context, id int64, update *domain.UpdateUserParam) (*domain.User, error)
+	FindAll(ctx context.Context, param domain.FindAllUsersParam) ([]domain.User, *domain.FindAllUsersParam, error)
 }
 
 type UserService struct {
@@ -113,4 +114,13 @@ func (s *UserService) Update(ctx context.Context, id int64, update *domain.Updat
 	}
 
 	return result, nil
+}
+
+func (s *UserService) FindAll(ctx context.Context, param domain.FindAllUsersParam) ([]domain.User, *domain.FindAllUsersParam, error) {
+	param.Normalize()
+	users, err := s.userRepo.FindAll(ctx, param)
+	if err != nil {
+		return nil, nil, err
+	}
+	return users, &param, nil
 }

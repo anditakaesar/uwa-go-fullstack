@@ -29,6 +29,24 @@ func TestSendJSON(test *testing.T) {
 		assert.JSONEq(test, expected, w.Body.String())
 	})
 
+	test.Run("success return data and meta", func(t *testing.T) {
+		w := httptest.NewRecorder()
+		data := map[string]string{"message": "hello"}
+		meta := map[string]string{"metamsg": "message-meta"}
+
+		transport.SendJSON(w, http.StatusOK, data, transport.WithMeta(meta))
+
+		// Check Status
+		assert.Equal(test, http.StatusOK, w.Code)
+
+		// Check Content-Type
+		assert.Equal(test, "application/json; charset=utf-8", w.Header().Get("Content-Type"))
+
+		// Check Body
+		expected := `{"data":{"message":"hello"}, "meta":{"metamsg":"message-meta"}}`
+		assert.JSONEq(test, expected, w.Body.String())
+	})
+
 	test.Run("fails to encode complex type", func(t *testing.T) {
 		w := httptest.NewRecorder()
 

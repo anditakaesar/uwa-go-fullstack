@@ -35,3 +35,4 @@ packages:
     interfaces:
       IUserRepository:
       IPasswordChecker:
+      IUserService:

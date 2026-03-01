@@ -3,6 +3,7 @@ package domain
 import (
 	"context"
 
+	"github.com/anditakaesar/uwa-go-fullstack/internal/common"
 	"github.com/anditakaesar/uwa-go-fullstack/internal/env"
 )
 
@@ -38,4 +39,12 @@ type FetchUserParam struct {
 	ID        *int64
 	Username  *string
 	ForUpdate bool
+}
+
+type FindAllUsersParam struct {
+	Pagination common.Pagination `json:"pagination"`
+}
+
+func (param *FindAllUsersParam) Normalize() {
+	param.Pagination.Normalize()
 }

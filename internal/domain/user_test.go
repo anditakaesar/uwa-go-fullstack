@@ -32,3 +32,15 @@ func TestUserFromContext(test *testing.T) {
 		assert.Equal(t, domain.RoleAdmin, got.Role)
 	})
 }
+
+func TestFindAllUsers_Normalize(test *testing.T) {
+	test.Parallel()
+	test.Run("success normalized", func(t *testing.T) {
+		var param domain.FindAllUsersParam
+		param.Normalize()
+
+		assert.Equal(t, 1, param.Pagination.Page)
+		assert.Equal(t, 10, param.Pagination.Size)
+	})
+
+}

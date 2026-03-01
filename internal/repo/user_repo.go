@@ -160,3 +160,39 @@ func (r *UserRepository) Update(ctx context.Context, id int64, param domain.Upda
 
 	return &model, nil
 }
+
+func (r *UserRepository) FindAll(ctx context.Context, param domain.FindAllUsersParam) ([]domain.User, error) {
+	const query = `
+		SELECT id, username, password, role, created_at, updated_at, deleted_at
+        FROM users
+        WHERE deleted_at IS NULL
+		LIMIT $1 OFFSET $2`
+
+	rows, err := r.GetExecutor(ctx).Query(ctx,
+		query, param.Pagination.Size, param.Pagination.GetOffset())
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	users := []domain.User{}
+
+	for rows.Next() {
+		var u domain.User
+		err := rows.Scan(
+			&u.ID,
+			&u.Username,
+			&u.Password,
+			&u.Role,
+			&u.CreatedAt,
+			&u.UpdatedAt,
+			&u.DeletedAt,
+		)
+		if err != nil {
+			return nil, err
+		}
+		users = append(users, u)
+	}
+
+	return users, rows.Err()
+}

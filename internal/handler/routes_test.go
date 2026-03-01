@@ -68,6 +68,7 @@ func TestSetupUserApiRoutes(test *testing.T) {
 			path   string
 		}{
 			{http.MethodPost, "/users"},
+			{http.MethodGet, "/users"},
 		}
 
 		foundRoutes := make(map[string]bool)

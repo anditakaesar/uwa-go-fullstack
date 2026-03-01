@@ -84,3 +84,17 @@ func (h *UserApi) UpdateUser(w http.ResponseWriter, r *http.Request) error {
 	transport.SendJSON(w, http.StatusOK, UserDomainToResponse(user))
 	return nil
 }
+
+func (h *UserApi) FetchUsers(w http.ResponseWriter, r *http.Request) error {
+	pagination := parsePagination(r)
+
+	users, param, err := h.UserService.FindAll(r.Context(), domain.FindAllUsersParam{
+		Pagination: pagination,
+	})
+	if err != nil {
+		return err
+	}
+
+	transport.SendJSON(w, http.StatusOK, UserListToResponse(users), transport.WithMeta(*param))
+	return nil
+}

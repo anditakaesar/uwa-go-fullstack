@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/anditakaesar/uwa-go-fullstack/internal/common"
 	"github.com/anditakaesar/uwa-go-fullstack/internal/domain"
 	"github.com/anditakaesar/uwa-go-fullstack/internal/mocks"
 	"github.com/anditakaesar/uwa-go-fullstack/internal/mocks/custom"
@@ -462,5 +463,73 @@ func TestUserService_Update(test *testing.T) {
 		m.uow.AssertExpectations(t)
 		m.userRepo.AssertExpectations(t)
 		m.passChecker.AssertExpectations(t)
+	})
+}
+
+func TestUserService_FindAll(test *testing.T) {
+	test.Parallel()
+
+	test.Run("success", func(t *testing.T) {
+		m := setupMocks()
+
+		m.userRepo.On("FindAll", m.ctx, domain.FindAllUsersParam{
+			Pagination: common.Pagination{
+				Page: 1,
+				Size: 1,
+			},
+		}).Return([]domain.User{
+			{
+				Base: domain.Base{
+					ID: 1,
+				},
+				Username: "user1",
+				Password: "pass",
+				Role:     domain.RoleAdmin,
+			},
+		}, nil).Once()
+
+		s := service.NewUserService(service.UserServiceDeps{
+			UserRepo: m.userRepo,
+		})
+
+		got, param, gotErr := s.FindAll(m.ctx, domain.FindAllUsersParam{
+			Pagination: common.Pagination{
+				Page: 1,
+				Size: 1,
+			},
+		})
+		assert.NoError(t, gotErr)
+		assert.NotNil(t, got)
+		assert.Equal(t, 1, len(got))
+		assert.NotNil(t, param)
+
+		m.userRepo.AssertExpectations(t)
+	})
+
+	test.Run("error", func(t *testing.T) {
+		m := setupMocks()
+
+		m.userRepo.On("FindAll", m.ctx, domain.FindAllUsersParam{
+			Pagination: common.Pagination{
+				Page: 1,
+				Size: 1,
+			},
+		}).Return([]domain.User{}, errors.New("error_FindAll")).Once()
+
+		s := service.NewUserService(service.UserServiceDeps{
+			UserRepo: m.userRepo,
+		})
+
+		got, param, gotErr := s.FindAll(m.ctx, domain.FindAllUsersParam{
+			Pagination: common.Pagination{
+				Page: 1,
+				Size: 1,
+			},
+		})
+		assert.Error(t, gotErr)
+		assert.Nil(t, got)
+		assert.Nil(t, param)
+
+		m.userRepo.AssertExpectations(t)
 	})
 }

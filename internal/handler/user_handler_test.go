@@ -8,6 +8,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/anditakaesar/uwa-go-fullstack/internal/common"
 	"github.com/anditakaesar/uwa-go-fullstack/internal/domain"
 	"github.com/anditakaesar/uwa-go-fullstack/internal/handler"
 	"github.com/go-chi/chi/v5"
@@ -390,4 +391,49 @@ func TestUserApi_UpdateUser(test *testing.T) {
 		assert.Error(t, gotErr)
 		m.userSvc.AssertExpectations(t)
 	})
+}
+
+func TestUserApi_FetchUsers(test *testing.T) {
+
+	test.Run("success", func(t *testing.T) {
+		m, d := setupMocks()
+
+		h := handler.NewUserApi(handler.UserApiDeps{
+			UserService: d.UserService,
+		})
+
+		m.userSvc.On("FindAll", m.anything, domain.FindAllUsersParam{
+			Pagination: common.Pagination{
+				Page: 1,
+				Size: 15,
+			},
+		}).Return([]domain.User{
+			{
+				Base: domain.Base{
+					ID: 1,
+				},
+				Username: "user1",
+				Password: "pass",
+				Role:     domain.RoleUser,
+			},
+			{
+				Base: domain.Base{
+					ID: 1,
+				},
+				Username: "user1",
+				Password: "pass",
+				Role:     domain.RoleUser,
+			},
+		})
+
+		req, err := http.NewRequest(http.MethodGet, "/api/users?page=1&size=15", nil)
+		assert.NoError(t, err)
+
+		rr := httptest.NewRecorder()
+		gotErr := h.FetchUsers(rr, req)
+
+		assert.NoError(t, gotErr)
+		m.userSvc.AssertExpectations(t)
+	})
+
 }

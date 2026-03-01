@@ -14,6 +14,14 @@ type Response struct {
 	Meta any `json:"meta,omitempty"`
 }
 
+type SendOption func(*Response)
+
+func WithMeta(meta any) SendOption {
+	return func(r *Response) {
+		r.Meta = meta
+	}
+}
+
 // ErrorResponse
 type ErrObj struct {
 	Title   string `json:"title,omitempty"`
@@ -24,8 +32,12 @@ type ErrorResponse struct {
 	Error ErrObj `json:"error"`
 }
 
-func SendJSON(w http.ResponseWriter, status int, unwrappedData any) {
+func SendJSON(w http.ResponseWriter, status int, unwrappedData any, opts ...SendOption) {
 	response := Response{Data: unwrappedData}
+
+	for _, opt := range opts {
+		opt(&response)
+	}
 
 	buf := new(bytes.Buffer)
 	if err := json.NewEncoder(buf).Encode(response); err != nil {

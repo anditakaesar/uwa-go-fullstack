@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/anditakaesar/uwa-go-fullstack/internal/common"
 	"github.com/anditakaesar/uwa-go-fullstack/internal/server/transport"
 	"github.com/anditakaesar/uwa-go-fullstack/internal/xerror"
 	"github.com/anditakaesar/uwa-go-fullstack/internal/xlog"
@@ -49,4 +50,35 @@ func parseIDParam(r *http.Request) (int64, error) {
 	}
 
 	return id, nil
+}
+
+func parsePagination(r *http.Request) common.Pagination {
+	const (
+		defaultPage     int = 1
+		defaultPageSize int = 10
+	)
+
+	q := r.URL.Query()
+	page, err := strconv.Atoi(q.Get("page"))
+	if err != nil {
+		page = defaultPage
+	}
+
+	size, err := strconv.Atoi(q.Get("size"))
+	if err != nil {
+		size = defaultPageSize
+	}
+
+	if page < 1 {
+		page = defaultPage
+	}
+
+	if size < 1 {
+		size = defaultPageSize
+	}
+
+	return common.Pagination{
+		Page: page,
+		Size: size,
+	}
 }

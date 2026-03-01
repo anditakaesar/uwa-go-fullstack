@@ -367,3 +367,101 @@ func TestUserRepository_Update(test *testing.T) {
 		assert.NoError(t, m.mockDB.ExpectationsWereMet())
 	})
 }
+
+func TestUserRepository_FindAll(test *testing.T) {
+	test.Parallel()
+
+	const query = `
+		SELECT id, username, password, role, created_at, updated_at, deleted_at
+        FROM users
+        WHERE deleted_at IS NULL
+		LIMIT $1 OFFSET $2`
+
+	expectUser := domain.User{
+		Base: domain.Base{
+			ID: 1,
+		},
+		Username: "user1",
+		Password: "user-pass",
+		Role:     domain.RoleAdmin,
+	}
+
+	param := domain.FindAllUsersParam{
+		Pagination: common.Pagination{
+			Page: 1,
+			Size: 1,
+		},
+	}
+
+	test.Run("success", func(t *testing.T) {
+		m, err := setupMocks()
+		assert.NoError(t, err)
+		defer m.mockDB.Close()
+
+		rows := m.mockDB.NewRows([]string{
+			"id", "username", "password", "role", "created_at", "updated_at", "deleted_at",
+		}).AddRow(
+			int64(1), expectUser.Username, expectUser.Password, expectUser.Role, m.now, nil, nil,
+		)
+
+		m.mockDB.ExpectQuery(regexp.QuoteMeta(query)).
+			WithArgs(param.Pagination.Size, param.Pagination.GetOffset()).
+			WillReturnRows(rows)
+
+		r := repo.NewUserRepository(m.mockDB)
+
+		got, err := r.FindAll(m.ctx, param)
+		assert.NoError(t, err)
+
+		assert.Equal(t, 1, len(got))
+		assert.Equal(t, int64(1), got[0].ID)
+		assert.Equal(t, "user1", got[0].Username)
+		assert.NoError(t, m.mockDB.ExpectationsWereMet())
+	})
+
+	test.Run("error receive less column", func(t *testing.T) {
+		m, err := setupMocks()
+		assert.NoError(t, err)
+		defer m.mockDB.Close()
+
+		rows := m.mockDB.NewRows([]string{
+			"id", "username", "password", "role", "created_at", "updated_at",
+		}).AddRow(
+			int64(1), expectUser.Username, expectUser.Password, expectUser.Role, m.now, nil,
+		)
+
+		m.mockDB.ExpectQuery(regexp.QuoteMeta(query)).
+			WithArgs(param.Pagination.Size, param.Pagination.GetOffset()).
+			WillReturnRows(rows)
+
+		r := repo.NewUserRepository(m.mockDB)
+
+		got, err := r.FindAll(m.ctx, param)
+		assert.Error(t, err)
+		assert.Nil(t, got)
+		assert.NoError(t, m.mockDB.ExpectationsWereMet())
+	})
+
+	test.Run("error", func(t *testing.T) {
+		m, err := setupMocks()
+		assert.NoError(t, err)
+		defer m.mockDB.Close()
+
+		// rows := m.mockDB.NewRows([]string{
+		// 	"id", "username", "password", "role", "created_at", "updated_at", "deleted_at",
+		// }).AddRow(
+		// 	int64(1), expectUser.Username, expectUser.Password, expectUser.Role, m.now, nil, nil,
+		// )
+
+		m.mockDB.ExpectQuery(regexp.QuoteMeta(query)).
+			WithArgs(param.Pagination.Size, param.Pagination.GetOffset()).
+			WillReturnError(errors.New("error_Fetch"))
+
+		r := repo.NewUserRepository(m.mockDB)
+
+		got, err := r.FindAll(m.ctx, param)
+		assert.Error(t, err)
+		assert.Nil(t, got)
+		assert.NoError(t, m.mockDB.ExpectationsWereMet())
+	})
+}

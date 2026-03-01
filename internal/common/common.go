@@ -3,13 +3,23 @@ package common
 import "fmt"
 
 type Pagination struct {
-	Page int
-	Size int
+	Page int `json:"page"`
+	Size int `json:"size"`
 }
 
 func (p *Pagination) GetOffset() int {
 	offset := (p.Page - 1) * p.Size
 	return offset
+}
+
+func (p *Pagination) Normalize() {
+	if p.Size > 100 || p.Size < 1 {
+		p.Size = 10
+	}
+
+	if p.Page < 1 {
+		p.Page = 1
+	}
 }
 
 type SortDirection string

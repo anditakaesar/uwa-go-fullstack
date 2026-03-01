@@ -242,6 +242,74 @@ func (_c *MockIUserRepository_FetchUserByParam_Call) RunAndReturn(run func(ctx c
 	return _c
 }
 
+// FindAll provides a mock function for the type MockIUserRepository
+func (_mock *MockIUserRepository) FindAll(ctx context.Context, param domain.FindAllUsersParam) ([]domain.User, error) {
+	ret := _mock.Called(ctx, param)
+
+	if len(ret) == 0 {
+		panic("no return value specified for FindAll")
+	}
+
+	var r0 []domain.User
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, domain.FindAllUsersParam) ([]domain.User, error)); ok {
+		return returnFunc(ctx, param)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, domain.FindAllUsersParam) []domain.User); ok {
+		r0 = returnFunc(ctx, param)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]domain.User)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, domain.FindAllUsersParam) error); ok {
+		r1 = returnFunc(ctx, param)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockIUserRepository_FindAll_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'FindAll'
+type MockIUserRepository_FindAll_Call struct {
+	*mock.Call
+}
+
+// FindAll is a helper method to define mock.On call
+//   - ctx context.Context
+//   - param domain.FindAllUsersParam
+func (_e *MockIUserRepository_Expecter) FindAll(ctx interface{}, param interface{}) *MockIUserRepository_FindAll_Call {
+	return &MockIUserRepository_FindAll_Call{Call: _e.mock.On("FindAll", ctx, param)}
+}
+
+func (_c *MockIUserRepository_FindAll_Call) Run(run func(ctx context.Context, param domain.FindAllUsersParam)) *MockIUserRepository_FindAll_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 domain.FindAllUsersParam
+		if args[1] != nil {
+			arg1 = args[1].(domain.FindAllUsersParam)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockIUserRepository_FindAll_Call) Return(users []domain.User, err error) *MockIUserRepository_FindAll_Call {
+	_c.Call.Return(users, err)
+	return _c
+}
+
+func (_c *MockIUserRepository_FindAll_Call) RunAndReturn(run func(ctx context.Context, param domain.FindAllUsersParam) ([]domain.User, error)) *MockIUserRepository_FindAll_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // Update provides a mock function for the type MockIUserRepository
 func (_mock *MockIUserRepository) Update(ctx context.Context, id int64, param domain.UpdateUserParam) (*domain.User, error) {
 	ret := _mock.Called(ctx, id, param)
