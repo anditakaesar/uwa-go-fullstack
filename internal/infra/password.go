@@ -85,7 +85,14 @@ func (ph *passwordArgon) CheckPassword(password string, encodedHash string) (boo
 		return false, err
 	}
 
-	comparisonHash := argon2.IDKey([]byte(password+ph.secret), salt, iterations, memory, parallelism, uint32(len(decodedHash)))
+	comparisonHash := argon2.IDKey(
+		[]byte(password+ph.secret),
+		salt,
+		ph.params.iterations,
+		ph.params.memory,
+		ph.params.parallelism,
+		ph.params.keyLength,
+	)
 
 	if subtle.ConstantTimeCompare(decodedHash, comparisonHash) == 1 {
 		return true, nil

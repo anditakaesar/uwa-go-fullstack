@@ -53,6 +53,12 @@ func TestDefineStatusCode(t *testing.T) {
 			want:    http.StatusBadRequest,
 		},
 		{
+			name:    "decoding error",
+			err:     &xerror.ErrorDecodingRequest{Err: errors.New("decoding_err")},
+			wantMsg: "error while decoding request: decoding_err",
+			want:    http.StatusBadRequest,
+		},
+		{
 			name:    "default error",
 			err:     errors.New("some-error"),
 			wantMsg: "some-error",

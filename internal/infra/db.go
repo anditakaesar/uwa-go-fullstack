@@ -40,7 +40,6 @@ func (d *database) Close() {
 }
 
 // Unit of work
-
 type IInfraDB interface {
 	Begin(ctx context.Context) (pgx.Tx, error)
 	Close()

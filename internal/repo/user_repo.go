@@ -2,9 +2,12 @@ package repo
 
 import (
 	"context"
+	"errors"
+	"fmt"
 
 	"github.com/anditakaesar/uwa-go-fullstack/internal/common"
 	"github.com/anditakaesar/uwa-go-fullstack/internal/domain"
+	"github.com/anditakaesar/uwa-go-fullstack/internal/xerror"
 	"github.com/jackc/pgx/v5"
 )
 
@@ -36,7 +39,7 @@ func (r *UserRepository) CreateUser(ctx context.Context, newUser domain.User) (*
 
 	var model domain.User
 
-	err := r.db.QueryRow(ctx, query, newUser.Username, newUser.Password).Scan(
+	err := r.GetExecutor(ctx).QueryRow(ctx, query, newUser.Username, newUser.Password).Scan(
 		&model.ID,
 		&model.Username,
 		&model.CreatedAt,
@@ -59,7 +62,7 @@ func (r *UserRepository) CreateUserAdmin(ctx context.Context, newUser domain.Use
 
 	var model domain.User
 
-	err := r.db.QueryRow(ctx, query, newUser.Username, newUser.Password, domain.RoleAdmin).Scan(
+	err := r.GetExecutor(ctx).QueryRow(ctx, query, newUser.Username, newUser.Password, domain.RoleAdmin).Scan(
 		&model.ID,
 		&model.Username,
 		&model.Role,
@@ -74,17 +77,37 @@ func (r *UserRepository) CreateUserAdmin(ctx context.Context, newUser domain.Use
 	return &model, nil
 }
 
-func (r *UserRepository) GetUser(ctx context.Context, username string) (*domain.User, error) {
-	const query = `
+func (r *UserRepository) FetchUserByParam(ctx context.Context, param domain.FetchUserParam) (*domain.User, error) {
+	query := `
 		SELECT id, username, password, role, created_at, updated_at, deleted_at
         FROM users
-        WHERE deleted_at IS NULL
-		AND username = $1
-	`
+        WHERE deleted_at IS NULL `
+	var args []any
+	argCount := 1
+
+	if param.ID != nil {
+		query += fmt.Sprintf("AND id = $%d ", argCount)
+		args = append(args, *param.ID)
+		argCount++
+	}
+
+	if param.Username != nil {
+		query += fmt.Sprintf("AND username = $%d ", argCount)
+		args = append(args, *param.Username)
+		argCount++
+	}
+
+	if argCount == 1 && !param.ForUpdate {
+		return nil, &xerror.ErrorValidation{Message: "fetch user param required"}
+	}
+
+	if param.ForUpdate {
+		query += "FOR UPDATE"
+	}
 
 	var model domain.User
 
-	err := r.db.QueryRow(ctx, query, username).Scan(
+	err := r.GetExecutor(ctx).QueryRow(ctx, query, args...).Scan(
 		&model.ID,
 		&model.Username,
 		&model.Password,
@@ -100,19 +123,32 @@ func (r *UserRepository) GetUser(ctx context.Context, username string) (*domain.
 	return &model, nil
 }
 
-func (r *UserRepository) GetUserByID(ctx context.Context, id int64) (*domain.User, error) {
-	const query = `
-		SELECT id, username, role, created_at, updated_at, deleted_at
-        FROM users
-        WHERE deleted_at IS NULL
-		AND id = $1
-	`
+func (r *UserRepository) Update(ctx context.Context, id int64, param domain.UpdateUserParam) (*domain.User, error) {
+	query := "UPDATE users SET "
+	var args []any
+	argCount := 1
+
+	if param.Password != nil {
+		query += fmt.Sprintf("password = $%d, ", argCount)
+		args = append(args, *param.Password)
+		argCount++
+	}
+
+	if argCount == 1 {
+		return nil, errors.New("nothing to update")
+	}
+
+	query += "updated_at = NOW() "
+	query += fmt.Sprintf("WHERE id = $%d AND deleted_at IS NULL ", argCount)
+	args = append(args, id)
+	query += "RETURNING id, username, password, role, created_at, updated_at, deleted_at"
 
 	var model domain.User
 
-	err := r.db.QueryRow(ctx, query, id).Scan(
+	err := r.GetExecutor(ctx).QueryRow(ctx, query, args...).Scan(
 		&model.ID,
 		&model.Username,
+		&model.Password,
 		&model.Role,
 		&model.CreatedAt,
 		&model.UpdatedAt,

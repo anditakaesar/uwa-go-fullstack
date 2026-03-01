@@ -2,6 +2,7 @@ package handler_test
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"net/http"
 	"net/http/httptest"
@@ -9,6 +10,7 @@ import (
 
 	"github.com/anditakaesar/uwa-go-fullstack/internal/domain"
 	"github.com/anditakaesar/uwa-go-fullstack/internal/handler"
+	"github.com/go-chi/chi/v5"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -124,6 +126,267 @@ func TestUserApi_CreateUser(test *testing.T) {
 		rr := httptest.NewRecorder()
 
 		gotErr := h.CreateUser(rr, req)
+		assert.Error(t, gotErr)
+		m.userSvc.AssertExpectations(t)
+	})
+}
+
+func TestUserApi_UpdateUser(test *testing.T) {
+	test.Parallel()
+
+	test.Run("success", func(t *testing.T) {
+		m, d := setupMocks()
+
+		h := handler.NewUserApi(handler.UserApiDeps{
+			UserService: d.UserService,
+		})
+
+		newPass := "new-pass"
+		m.userSvc.On("Update", m.anything, int64(1), &domain.UpdateUserParam{
+			OldPassword: "old-pass",
+			Password:    &newPass,
+		}).Return(&domain.User{
+			Base: domain.Base{
+				ID: 1,
+			},
+			Username: "user1",
+			Role:     domain.RoleUser,
+		}, nil).Once()
+
+		userReq := `{"oldPassword":"old-pass","password":"new-pass"}`
+		// 1. Create a new chi route context
+		rctx := chi.NewRouteContext()
+
+		// 2. Add the "id" parameter to that context
+		rctx.URLParams.Add("id", "1")
+
+		// 3. Inject the context into your request
+		req, err := http.NewRequest(http.MethodPost, "/api/users/1", bytes.NewBufferString(userReq))
+
+		ctxUser := context.WithValue(req.Context(), domain.UserCtxKey, &domain.User{
+			Base: domain.Base{
+				ID: 1,
+			},
+		})
+
+		req = req.WithContext(context.WithValue(ctxUser, chi.RouteCtxKey, rctx))
+
+		assert.NoError(t, err)
+
+		rr := httptest.NewRecorder()
+		gotErr := h.UpdateUser(rr, req)
+
+		assert.NoError(t, gotErr)
+		m.userSvc.AssertExpectations(t)
+	})
+
+	test.Run("error when update", func(t *testing.T) {
+		m, d := setupMocks()
+
+		h := handler.NewUserApi(handler.UserApiDeps{
+			UserService: d.UserService,
+		})
+
+		newPass := "new-pass"
+		m.userSvc.On("Update", m.anything, int64(1), &domain.UpdateUserParam{
+			OldPassword: "old-pass",
+			Password:    &newPass,
+		}).Return(nil, errors.New("error_Update")).Once()
+
+		userReq := `{"oldPassword":"old-pass","password":"new-pass"}`
+		// 1. Create a new chi route context
+		rctx := chi.NewRouteContext()
+
+		// 2. Add the "id" parameter to that context
+		rctx.URLParams.Add("id", "1")
+
+		// 3. Inject the context into your request
+		req, err := http.NewRequest(http.MethodPost, "/api/users/1", bytes.NewBufferString(userReq))
+
+		ctxUser := context.WithValue(req.Context(), domain.UserCtxKey, &domain.User{
+			Base: domain.Base{
+				ID: 1,
+			},
+		})
+
+		req = req.WithContext(context.WithValue(ctxUser, chi.RouteCtxKey, rctx))
+
+		assert.NoError(t, err)
+
+		rr := httptest.NewRecorder()
+		gotErr := h.UpdateUser(rr, req)
+
+		assert.Error(t, gotErr)
+		m.userSvc.AssertExpectations(t)
+	})
+
+	test.Run("error when verifying user", func(t *testing.T) {
+		m, d := setupMocks()
+
+		h := handler.NewUserApi(handler.UserApiDeps{
+			UserService: d.UserService,
+		})
+
+		userReq := `{"oldPassword":"old-pass","password":"new-pass"}`
+		// 1. Create a new chi route context
+		rctx := chi.NewRouteContext()
+
+		// 2. Add the "id" parameter to that context
+		rctx.URLParams.Add("id", "2")
+
+		// 3. Inject the context into your request
+		req, err := http.NewRequest(http.MethodPost, "/api/users/1", bytes.NewBufferString(userReq))
+
+		ctxUser := context.WithValue(req.Context(), domain.UserCtxKey, &domain.User{
+			Base: domain.Base{
+				ID: 1,
+			},
+		})
+
+		req = req.WithContext(context.WithValue(ctxUser, chi.RouteCtxKey, rctx))
+
+		assert.NoError(t, err)
+
+		rr := httptest.NewRecorder()
+		gotErr := h.UpdateUser(rr, req)
+
+		assert.Error(t, gotErr)
+		m.userSvc.AssertExpectations(t)
+	})
+
+	test.Run("error when authorizing", func(t *testing.T) {
+		m, d := setupMocks()
+
+		h := handler.NewUserApi(handler.UserApiDeps{
+			UserService: d.UserService,
+		})
+
+		userReq := `{"oldPassword":"old-pass","password":"new-pass"}`
+		rctx := chi.NewRouteContext()
+		rctx.URLParams.Add("id", "2")
+
+		req, err := http.NewRequest(http.MethodPost, "/api/users/1", bytes.NewBufferString(userReq))
+		req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
+
+		assert.NoError(t, err)
+
+		rr := httptest.NewRecorder()
+		gotErr := h.UpdateUser(rr, req)
+
+		assert.Error(t, gotErr)
+		m.userSvc.AssertExpectations(t)
+	})
+
+	test.Run("error when validating request", func(t *testing.T) {
+		m, d := setupMocks()
+
+		h := handler.NewUserApi(handler.UserApiDeps{
+			UserService: d.UserService,
+		})
+
+		userReq := `{"oldPassword":"old-pass","password":""}`
+		rctx := chi.NewRouteContext()
+		rctx.URLParams.Add("id", "1")
+
+		req, err := http.NewRequest(http.MethodPost, "/api/users/1", bytes.NewBufferString(userReq))
+		req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
+
+		assert.NoError(t, err)
+
+		rr := httptest.NewRecorder()
+		gotErr := h.UpdateUser(rr, req)
+
+		assert.Error(t, gotErr)
+		m.userSvc.AssertExpectations(t)
+	})
+
+	test.Run("error when validating request 2", func(t *testing.T) {
+		m, d := setupMocks()
+
+		h := handler.NewUserApi(handler.UserApiDeps{
+			UserService: d.UserService,
+		})
+
+		userReq := `{"oldPassword":"","password":""}`
+		rctx := chi.NewRouteContext()
+		rctx.URLParams.Add("id", "1")
+
+		req, err := http.NewRequest(http.MethodPost, "/api/users/1", bytes.NewBufferString(userReq))
+		req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
+
+		assert.NoError(t, err)
+
+		rr := httptest.NewRecorder()
+		gotErr := h.UpdateUser(rr, req)
+
+		assert.Error(t, gotErr)
+		m.userSvc.AssertExpectations(t)
+	})
+
+	test.Run("error when parsing request body", func(t *testing.T) {
+		m, d := setupMocks()
+
+		h := handler.NewUserApi(handler.UserApiDeps{
+			UserService: d.UserService,
+		})
+
+		userReq := `{"oldPassword":"old-pass,"password":""}`
+		rctx := chi.NewRouteContext()
+		rctx.URLParams.Add("id", "1")
+
+		req, err := http.NewRequest(http.MethodPost, "/api/users/1", bytes.NewBufferString(userReq))
+		req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
+
+		assert.NoError(t, err)
+
+		rr := httptest.NewRecorder()
+		gotErr := h.UpdateUser(rr, req)
+
+		assert.Error(t, gotErr)
+		m.userSvc.AssertExpectations(t)
+	})
+
+	test.Run("error when parsing id not a number", func(t *testing.T) {
+		m, d := setupMocks()
+
+		h := handler.NewUserApi(handler.UserApiDeps{
+			UserService: d.UserService,
+		})
+
+		userReq := `{"oldPassword":"old-pass","password":"new-pass"}`
+		rctx := chi.NewRouteContext()
+		rctx.URLParams.Add("id", "not-anumber")
+
+		req, err := http.NewRequest(http.MethodPost, "/api/users/1", bytes.NewBufferString(userReq))
+		req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
+
+		assert.NoError(t, err)
+
+		rr := httptest.NewRecorder()
+		gotErr := h.UpdateUser(rr, req)
+
+		assert.Error(t, gotErr)
+		m.userSvc.AssertExpectations(t)
+	})
+
+	test.Run("error when parsing id empty", func(t *testing.T) {
+		m, d := setupMocks()
+
+		h := handler.NewUserApi(handler.UserApiDeps{
+			UserService: d.UserService,
+		})
+
+		userReq := `{"oldPassword":"old-pass","password":"new-pass"}`
+		rctx := chi.NewRouteContext()
+
+		req, err := http.NewRequest(http.MethodPost, "/api/users/1", bytes.NewBufferString(userReq))
+		req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
+
+		assert.NoError(t, err)
+
+		rr := httptest.NewRecorder()
+		gotErr := h.UpdateUser(rr, req)
+
 		assert.Error(t, gotErr)
 		m.userSvc.AssertExpectations(t)
 	})

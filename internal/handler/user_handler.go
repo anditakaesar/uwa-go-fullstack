@@ -2,7 +2,6 @@ package handler
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"strings"
 
@@ -31,7 +30,7 @@ func (h *UserApi) CreateUser(w http.ResponseWriter, r *http.Request) error {
 
 	err := json.NewDecoder(r.Body).Decode(&req)
 	if err != nil {
-		return &xerror.ErrorBadRequest{Message: fmt.Sprintf("error while decoding request: %v", err)}
+		return &xerror.ErrorDecodingRequest{Err: err}
 	}
 
 	err = req.Validate()
@@ -48,5 +47,40 @@ func (h *UserApi) CreateUser(w http.ResponseWriter, r *http.Request) error {
 	}
 
 	transport.SendJSON(w, http.StatusCreated, UserDomainToResponse(user))
+	return nil
+}
+
+func (h *UserApi) UpdateUser(w http.ResponseWriter, r *http.Request) error {
+	id, err := parseIDParam(r)
+	if err != nil {
+		return &xerror.ErrorNotFound{Message: err.Error()}
+	}
+
+	var req UpdateUserRequest
+	err = json.NewDecoder(r.Body).Decode(&req)
+	if err != nil {
+		return &xerror.ErrorDecodingRequest{Err: err}
+	}
+
+	err = req.Validate()
+	if err != nil {
+		return err
+	}
+
+	requesterUser, ok := domain.UserFromContext(r.Context())
+	if !ok {
+		return &xerror.ErrorPermission{Message: "permission required"}
+	}
+
+	if requesterUser.ID != id {
+		return &xerror.ErrorPermission{Message: "update user not allowed"}
+	}
+
+	user, err := h.UserService.Update(r.Context(), id, req.ToDomainParam())
+	if err != nil {
+		return err
+	}
+
+	transport.SendJSON(w, http.StatusOK, UserDomainToResponse(user))
 	return nil
 }

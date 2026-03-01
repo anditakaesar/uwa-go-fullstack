@@ -2,6 +2,7 @@ package xerror
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 )
 
@@ -47,6 +48,15 @@ type ErrorValidation struct {
 
 func (e *ErrorValidation) Error() string { return e.Message }
 
+// ErrorDecodingRequest represents client request decoding
+type ErrorDecodingRequest struct {
+	Err error
+}
+
+func (e *ErrorDecodingRequest) Error() string {
+	return fmt.Sprintf("error while decoding request: %v", e.Err)
+}
+
 // DefineStatusCode maps custom error types to HTTP Status Codes
 func DefineStatusCode(err error) int {
 	if err == nil {
@@ -71,7 +81,10 @@ func DefineStatusCode(err error) int {
 
 	var errBadRequest *ErrorBadRequest
 	var errValidation *ErrorValidation
-	if errors.As(err, &errBadRequest) || errors.As(err, &errValidation) {
+	var errDecodingReq *ErrorDecodingRequest
+	if errors.As(err, &errBadRequest) ||
+		errors.As(err, &errValidation) ||
+		errors.As(err, &errDecodingReq) {
 		return http.StatusBadRequest
 	}
 

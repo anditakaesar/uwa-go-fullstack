@@ -40,3 +40,27 @@ func UserDomainToResponse(user *domain.User) UserResponse {
 		CreatedAt: user.CreatedAt,
 	}
 }
+
+type UpdateUserRequest struct {
+	OldPassword string `json:"oldPassword"`
+	Password    string `json:"password"`
+}
+
+func (req *UpdateUserRequest) Validate() error {
+	if strings.TrimSpace(req.OldPassword) == "" {
+		return &xerror.ErrorValidation{Message: "old password is required"}
+	}
+
+	if strings.TrimSpace(req.Password) == "" {
+		return &xerror.ErrorValidation{Message: "password is required"}
+	}
+
+	return nil
+}
+
+func (req *UpdateUserRequest) ToDomainParam() *domain.UpdateUserParam {
+	return &domain.UpdateUserParam{
+		OldPassword: req.OldPassword,
+		Password:    &req.Password,
+	}
+}

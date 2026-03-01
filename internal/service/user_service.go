@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/anditakaesar/uwa-go-fullstack/internal/domain"
@@ -11,17 +12,26 @@ type IUserService interface {
 	CreateUser(ctx context.Context, user domain.User) (*domain.User, error)
 	AuthenticateUser(ctx context.Context, username string, password string) (*domain.User, error)
 	GetUserByID(ctx context.Context, id int64) (*domain.User, error)
+	Update(ctx context.Context, id int64, update *domain.UpdateUserParam) (*domain.User, error)
 }
 
 type UserService struct {
 	userRepo    IUserRepository
 	passChecker IPasswordChecker
+	uow         IUnitOfWork
 }
 
-func NewUserService(userRepo IUserRepository, passChecker IPasswordChecker) *UserService {
+type UserServiceDeps struct {
+	UserRepo    IUserRepository
+	PassChecker IPasswordChecker
+	UOW         IUnitOfWork
+}
+
+func NewUserService(dep UserServiceDeps) *UserService {
 	return &UserService{
-		userRepo:    userRepo,
-		passChecker: passChecker,
+		userRepo:    dep.UserRepo,
+		passChecker: dep.PassChecker,
+		uow:         dep.UOW,
 	}
 }
 
@@ -46,7 +56,9 @@ func (s *UserService) CreateUserAdmin(ctx context.Context, user domain.User) (*d
 }
 
 func (s *UserService) AuthenticateUser(ctx context.Context, username string, password string) (*domain.User, error) {
-	getUser, err := s.userRepo.GetUser(ctx, username)
+	getUser, err := s.userRepo.FetchUserByParam(ctx, domain.FetchUserParam{
+		Username: &username,
+	})
 	if err != nil {
 		return nil, fmt.Errorf("error while getting user: %v", err)
 	}
@@ -60,5 +72,45 @@ func (s *UserService) AuthenticateUser(ctx context.Context, username string, pas
 }
 
 func (s *UserService) GetUserByID(ctx context.Context, id int64) (*domain.User, error) {
-	return s.userRepo.GetUserByID(ctx, id)
+	return s.userRepo.FetchUserByParam(ctx, domain.FetchUserParam{
+		ID: &id,
+	})
+}
+
+func (s *UserService) Update(ctx context.Context, id int64, update *domain.UpdateUserParam) (*domain.User, error) {
+	var result *domain.User
+	updateErr := s.uow.Do(ctx, func(txCtx context.Context) error {
+		user, err := s.userRepo.FetchUserByParam(txCtx, domain.FetchUserParam{
+			ID:        &id,
+			ForUpdate: true,
+		})
+		if err != nil {
+			return err
+		}
+
+		success, err := s.passChecker.CheckPassword(update.OldPassword, user.Password)
+		if !success || err != nil {
+			return errors.New("old password didn't match")
+		}
+
+		hash, err := s.passChecker.HashPassword(*update.Password)
+		if err != nil {
+			return err
+		}
+
+		result, err = s.userRepo.Update(txCtx, id, domain.UpdateUserParam{
+			Password: &hash,
+		})
+		if err != nil {
+			return err
+		}
+
+		return nil
+	})
+
+	if updateErr != nil {
+		return nil, updateErr
+	}
+
+	return result, nil
 }

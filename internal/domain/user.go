@@ -28,3 +28,14 @@ const (
 	RoleAdmin Role = "admin"
 	RoleUser  Role = "default"
 )
+
+type UpdateUserParam struct {
+	OldPassword string
+	Password    *string
+}
+
+type FetchUserParam struct {
+	ID        *int64
+	Username  *string
+	ForUpdate bool
+}

@@ -1,12 +1,15 @@
 package handler
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
+	"strconv"
 
 	"github.com/anditakaesar/uwa-go-fullstack/internal/server/transport"
 	"github.com/anditakaesar/uwa-go-fullstack/internal/xerror"
 	"github.com/anditakaesar/uwa-go-fullstack/internal/xlog"
+	"github.com/go-chi/chi/v5"
 )
 
 type AppHandler func(w http.ResponseWriter, r *http.Request) error
@@ -32,4 +35,18 @@ func MakeHandler(h AppHandler) http.HandlerFunc {
 			})
 		}
 	}
+}
+
+func parseIDParam(r *http.Request) (int64, error) {
+	idParam := chi.URLParam(r, "id")
+	if idParam == "" {
+		return 0, errors.New("invalid id param")
+	}
+
+	id, err := strconv.ParseInt(idParam, 10, 64)
+	if err != nil {
+		return 0, errors.New("invalid id param")
+	}
+
+	return id, nil
 }

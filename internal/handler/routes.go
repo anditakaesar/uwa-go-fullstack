@@ -91,6 +91,16 @@ func SetupUserApiRoutes(router chi.Router, h *UserApi) {
 				middlewares.RequireRole([]domain.Role{domain.RoleAdmin}),
 			},
 		},
+		{
+			Endpoint: Endpoint{
+				HttpMethod: http.MethodPost,
+				Path:       "/users/{id}",
+				Handler:    MakeHandler(h.UpdateUser),
+			},
+			Middlewares: []func(http.Handler) http.Handler{
+				middlewares.RequireAuth(),
+			},
+		},
 	}
 
 	for _, e := range protectedEndpoints {

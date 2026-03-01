@@ -169,111 +169,201 @@ func TestUserRepository_CreateAdminUser(test *testing.T) {
 
 }
 
-func TestUserRepository_GetUser(test *testing.T) {
+func TestUserRepository_FetchUserByParam(test *testing.T) {
 	test.Parallel()
-
-	const query = `
-		SELECT id, username, password, role, created_at, updated_at, deleted_at
-        FROM users
-        WHERE deleted_at IS NULL
-		AND username = $1
-	`
-
-	expectUser := domain.User{
-		Username: "user1",
-		Password: "password1",
-		Role:     domain.RoleUser,
-	}
 
 	test.Run("success", func(t *testing.T) {
 		m, err := setupMocks()
 		assert.NoError(t, err)
 		defer m.mockDB.Close()
 
-		rows := m.mockDB.NewRows([]string{"id", "username", "password", "role", "created_at", "updated_at", "deleted_at"}).
-			AddRow(int64(1), expectUser.Username, expectUser.Password, expectUser.Role, m.now, nil, nil)
+		userID := int64(1)
+		username := "user1"
+
+		const query = `
+			SELECT id, username, password, role, created_at, updated_at, deleted_at
+			FROM users
+			WHERE deleted_at IS NULL AND id = $1 AND username = $2 FOR UPDATE
+		`
+
+		rows := m.mockDB.NewRows([]string{
+			"id", "username", "password", "role", "created_at", "updated_at", "deleted_at",
+		}).AddRow(
+			userID, username, "test-pass", "admin", m.now, nil, nil,
+		)
+
 		m.mockDB.ExpectQuery(regexp.QuoteMeta(query)).
-			WithArgs(expectUser.Username).
-			WillReturnRows(rows)
+			WithArgs(
+				userID,
+				username,
+			).WillReturnRows(rows)
 
 		r := repo.NewUserRepository(m.mockDB)
-		res, err := r.GetUser(m.ctx, "user1")
-
-		assert.NoError(t, err)
-		assert.Equal(t, "user1", res.Username)
-		assert.Equal(t, domain.RoleUser, res.Role)
-		assert.Equal(t, res.CreatedAt, m.now)
+		got, gotErr := r.FetchUserByParam(m.ctx, domain.FetchUserParam{
+			ID:        &userID,
+			Username:  &username,
+			ForUpdate: true,
+		})
+		assert.NoError(t, gotErr)
+		assert.Equal(t, got.ID, userID)
 		assert.NoError(t, m.mockDB.ExpectationsWereMet())
 	})
 
-	test.Run("error", func(t *testing.T) {
+	test.Run("success only ID no update", func(t *testing.T) {
 		m, err := setupMocks()
 		assert.NoError(t, err)
 		defer m.mockDB.Close()
 
+		userID := int64(1)
+
+		const query = `
+			SELECT id, username, password, role, created_at, updated_at, deleted_at
+			FROM users
+			WHERE deleted_at IS NULL AND id = $1
+		`
+
+		rows := m.mockDB.NewRows([]string{
+			"id", "username", "password", "role", "created_at", "updated_at", "deleted_at",
+		}).AddRow(
+			userID, "user1", "test-pass", "admin", m.now, nil, nil,
+		)
+
 		m.mockDB.ExpectQuery(regexp.QuoteMeta(query)).
-			WithArgs(expectUser.Username).
-			WillReturnError(errors.New("query_error"))
+			WithArgs(
+				userID,
+			).WillReturnRows(rows)
 
 		r := repo.NewUserRepository(m.mockDB)
-		res, err := r.GetUser(m.ctx, "user1")
+		got, gotErr := r.FetchUserByParam(m.ctx, domain.FetchUserParam{
+			ID: &userID,
+		})
+		assert.NoError(t, gotErr)
+		assert.Equal(t, got.ID, userID)
+		assert.NoError(t, m.mockDB.ExpectationsWereMet())
+	})
 
-		assert.Error(t, err)
-		assert.Nil(t, res)
+	test.Run("error when fetch to db", func(t *testing.T) {
+		m, err := setupMocks()
+		assert.NoError(t, err)
+		defer m.mockDB.Close()
+
+		userID := int64(1)
+
+		const query = `
+			SELECT id, username, password, role, created_at, updated_at, deleted_at
+			FROM users
+			WHERE deleted_at IS NULL AND id = $1
+		`
+
+		m.mockDB.ExpectQuery(regexp.QuoteMeta(query)).
+			WithArgs(
+				userID,
+			).WillReturnError(errors.New("error_fetchUser"))
+
+		r := repo.NewUserRepository(m.mockDB)
+		got, gotErr := r.FetchUserByParam(m.ctx, domain.FetchUserParam{
+			ID: &userID,
+		})
+		assert.Error(t, gotErr)
+		assert.Nil(t, got)
+		assert.NoError(t, m.mockDB.ExpectationsWereMet())
+	})
+
+	test.Run("error notihg to get", func(t *testing.T) {
+		m, err := setupMocks()
+		assert.NoError(t, err)
+		defer m.mockDB.Close()
+
+		r := repo.NewUserRepository(m.mockDB)
+		got, gotErr := r.FetchUserByParam(m.ctx, domain.FetchUserParam{})
+
+		assert.Error(t, gotErr)
+		assert.Nil(t, got)
 		assert.NoError(t, m.mockDB.ExpectationsWereMet())
 	})
 }
 
-func TestUserRepository_GetUserByID(test *testing.T) {
+func TestUserRepository_Update(test *testing.T) {
 	test.Parallel()
-
-	const query = `
-		SELECT id, username, role, created_at, updated_at, deleted_at
-        FROM users
-        WHERE deleted_at IS NULL
-		AND id = $1
-	`
-
-	expectUser := domain.User{
-		Username: "user1",
-		Role:     domain.RoleUser,
-	}
 
 	test.Run("success", func(t *testing.T) {
 		m, err := setupMocks()
 		assert.NoError(t, err)
 		defer m.mockDB.Close()
 
-		rows := m.mockDB.NewRows([]string{"id", "username", "role", "created_at", "updated_at", "deleted_at"}).
-			AddRow(int64(1), expectUser.Username, expectUser.Role, m.now, nil, nil)
+		userID := int64(1)
+		hashedPass := "pass"
+
+		const query = `
+			UPDATE users SET password = $1, updated_at = NOW()
+			WHERE id = $2 AND deleted_at IS NULL
+			RETURNING id, username, password, role, created_at, updated_at, deleted_at
+		`
+
+		rows := m.mockDB.NewRows([]string{
+			"id", "username", "password", "role", "created_at", "updated_at", "deleted_at",
+		}).AddRow(
+			userID, "username", "test-pass", "admin", m.now, nil, nil,
+		)
+
 		m.mockDB.ExpectQuery(regexp.QuoteMeta(query)).
-			WithArgs(int64(1)).
-			WillReturnRows(rows)
+			WithArgs(
+				hashedPass,
+				userID,
+			).WillReturnRows(rows)
 
 		r := repo.NewUserRepository(m.mockDB)
-		res, err := r.GetUserByID(m.ctx, int64(1))
+		got, gotErr := r.Update(m.ctx, userID, domain.UpdateUserParam{
+			Password: &hashedPass,
+		})
 
-		assert.NoError(t, err)
-		assert.Equal(t, "user1", res.Username)
-		assert.Equal(t, domain.RoleUser, res.Role)
-		assert.Equal(t, res.CreatedAt, m.now)
+		assert.NoError(t, gotErr)
+		assert.Equal(t, userID, got.ID)
 		assert.NoError(t, m.mockDB.ExpectationsWereMet())
 	})
 
-	test.Run("error", func(t *testing.T) {
+	test.Run("error when execute query", func(t *testing.T) {
 		m, err := setupMocks()
 		assert.NoError(t, err)
 		defer m.mockDB.Close()
 
+		userID := int64(1)
+		hashedPass := "pass"
+
+		const query = `
+			UPDATE users SET password = $1, updated_at = NOW()
+			WHERE id = $2 AND deleted_at IS NULL
+			RETURNING id, username, password, role, created_at, updated_at, deleted_at
+		`
+
 		m.mockDB.ExpectQuery(regexp.QuoteMeta(query)).
-			WithArgs(int64(1)).
-			WillReturnError(errors.New("query_error"))
+			WithArgs(
+				hashedPass,
+				userID,
+			).WillReturnError(errors.New("error_Execute"))
 
 		r := repo.NewUserRepository(m.mockDB)
-		res, err := r.GetUserByID(m.ctx, int64(1))
+		got, gotErr := r.Update(m.ctx, userID, domain.UpdateUserParam{
+			Password: &hashedPass,
+		})
 
-		assert.Error(t, err)
-		assert.Nil(t, res)
+		assert.Error(t, gotErr)
+		assert.Nil(t, got)
+		assert.NoError(t, m.mockDB.ExpectationsWereMet())
+	})
+
+	test.Run("error when nothing to update", func(t *testing.T) {
+		m, err := setupMocks()
+		assert.NoError(t, err)
+		defer m.mockDB.Close()
+
+		userID := int64(1)
+
+		r := repo.NewUserRepository(m.mockDB)
+		got, gotErr := r.Update(m.ctx, userID, domain.UpdateUserParam{})
+
+		assert.Error(t, gotErr)
+		assert.Nil(t, got)
 		assert.NoError(t, m.mockDB.ExpectationsWereMet())
 	})
 }

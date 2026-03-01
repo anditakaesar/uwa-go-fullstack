@@ -18,7 +18,12 @@ type Services struct {
 
 func NewInfra(pool *pgxpool.Pool) *Services {
 	userRepo := repo.NewUserRepository(pool)
-	userSvc := service.NewUserService(userRepo, NewPasswordHelper(env.Values.PassSecret))
+	uow := NewUnitOfWork(pool)
+	userSvc := service.NewUserService(service.UserServiceDeps{
+		UserRepo:    userRepo,
+		PassChecker: NewPasswordHelper(env.Values.PassSecret),
+		UOW:         uow,
+	})
 	jwtSvc := NewJWTService(env.Values.JWTSecret)
 	cookieService := NewCookieService(env.Values.IsDevelopment(), env.Values.CookieSecret)
 	fileSvc := service.NewFileService(env.Values.UploadDir, env.UPLOAD_ALLOWED_TYPES)
