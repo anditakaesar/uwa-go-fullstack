@@ -424,7 +424,12 @@ func TestUserApi_FetchUsers(test *testing.T) {
 				Password: "pass",
 				Role:     domain.RoleUser,
 			},
-		})
+		}, &domain.FindAllUsersParam{
+			Pagination: common.Pagination{
+				Page: 1,
+				Size: 15,
+			},
+		}, nil).Once()
 
 		req, err := http.NewRequest(http.MethodGet, "/api/users?page=1&size=15", nil)
 		assert.NoError(t, err)
@@ -433,6 +438,122 @@ func TestUserApi_FetchUsers(test *testing.T) {
 		gotErr := h.FetchUsers(rr, req)
 
 		assert.NoError(t, gotErr)
+		m.userSvc.AssertExpectations(t)
+	})
+
+	test.Run("success using default pagination", func(t *testing.T) {
+		m, d := setupMocks()
+
+		h := handler.NewUserApi(handler.UserApiDeps{
+			UserService: d.UserService,
+		})
+
+		m.userSvc.On("FindAll", m.anything, domain.FindAllUsersParam{
+			Pagination: common.Pagination{
+				Page: 1,
+				Size: 10,
+			},
+		}).Return([]domain.User{
+			{
+				Base: domain.Base{
+					ID: 1,
+				},
+				Username: "user1",
+				Password: "pass",
+				Role:     domain.RoleUser,
+			},
+			{
+				Base: domain.Base{
+					ID: 1,
+				},
+				Username: "user1",
+				Password: "pass",
+				Role:     domain.RoleUser,
+			},
+		}, &domain.FindAllUsersParam{
+			Pagination: common.Pagination{
+				Page: 1,
+				Size: 10,
+			},
+		}, nil).Once()
+
+		req, err := http.NewRequest(http.MethodGet, "/api/users?page=0&size=0", nil)
+		assert.NoError(t, err)
+
+		rr := httptest.NewRecorder()
+		gotErr := h.FetchUsers(rr, req)
+
+		assert.NoError(t, gotErr)
+		m.userSvc.AssertExpectations(t)
+	})
+
+	test.Run("success when page and size are not number", func(t *testing.T) {
+		m, d := setupMocks()
+
+		h := handler.NewUserApi(handler.UserApiDeps{
+			UserService: d.UserService,
+		})
+
+		m.userSvc.On("FindAll", m.anything, domain.FindAllUsersParam{
+			Pagination: common.Pagination{
+				Page: 1,
+				Size: 10,
+			},
+		}).Return([]domain.User{
+			{
+				Base: domain.Base{
+					ID: 1,
+				},
+				Username: "user1",
+				Password: "pass",
+				Role:     domain.RoleUser,
+			},
+			{
+				Base: domain.Base{
+					ID: 1,
+				},
+				Username: "user1",
+				Password: "pass",
+				Role:     domain.RoleUser,
+			},
+		}, &domain.FindAllUsersParam{
+			Pagination: common.Pagination{
+				Page: 1,
+				Size: 10,
+			},
+		}, nil).Once()
+
+		req, err := http.NewRequest(http.MethodGet, "/api/users?page=x&size=x", nil)
+		assert.NoError(t, err)
+
+		rr := httptest.NewRecorder()
+		gotErr := h.FetchUsers(rr, req)
+
+		assert.NoError(t, gotErr)
+		m.userSvc.AssertExpectations(t)
+	})
+
+	test.Run("error", func(t *testing.T) {
+		m, d := setupMocks()
+
+		h := handler.NewUserApi(handler.UserApiDeps{
+			UserService: d.UserService,
+		})
+
+		m.userSvc.On("FindAll", m.anything, domain.FindAllUsersParam{
+			Pagination: common.Pagination{
+				Page: 1,
+				Size: 15,
+			},
+		}).Return(nil, nil, errors.New("error_FindAll")).Once()
+
+		req, err := http.NewRequest(http.MethodGet, "/api/users?page=1&size=15", nil)
+		assert.NoError(t, err)
+
+		rr := httptest.NewRecorder()
+		gotErr := h.FetchUsers(rr, req)
+
+		assert.Error(t, gotErr)
 		m.userSvc.AssertExpectations(t)
 	})
 
